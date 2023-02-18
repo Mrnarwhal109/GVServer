@@ -1,9 +1,22 @@
 [package]
-name = "GVServer"
+name = "gv_server"
 version = "0.1.0"
+authors = ["Nick Knobbe"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+path = "src/main.rs"
+name = "gv_server"
+
+# Dev dependencies are used exclusively when running tests or examples
+# They do not get included in the final application binary!
+[dev-dependencies]
+reqwest = "0.11"
 
 [dependencies]
 actix-web = "4"
