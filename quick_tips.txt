@@ -1,5 +1,0 @@
-async is built on a Future trait.
-A future stands for a value that may not be there yet.
-All futures expose a poll method.
-
-If you want to expand macros, use cargo expand and the nightly compiler.

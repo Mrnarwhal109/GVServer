@@ -1,0 +1,11 @@
+async is built on a Future trait.
+A future stands for a value that may not be there yet.
+All futures expose a poll method.
+
+If you want to expand macros, use cargo expand and the nightly compiler.
+
+You can think of a mutable reference as a unique reference: the compiler guarantees to execute that they have indeed
+exclusive access to that PgConnection because there cannot be two active mutable references to the same value
+at the same time in the whole program. Quite neat.
+
+Look up Arc smart pointer

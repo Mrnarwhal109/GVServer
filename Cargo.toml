@@ -19,5 +19,27 @@ name = "gv_server"
 reqwest = "0.11"
 
 [dependencies]
+config = "0.13"
 actix-web = "4"
 tokio = { version = "1", features = ["full"] }
+# We need the optional 'derive' feature to use 'serde''s procedural macros:
+# '#[derive(Serialize)]' and #[derive(Deserialize)]'.
+# The feature is not enabled by default to avoid pulling in
+# unnecessary dependencies for projects that do not need it.
+serde = { version = "1", features = ["derive"]}
+dotenvy = { version = "0.15.6"}
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4.22", default-features = false, features = ["clock"] }
+
+# Using table-like toml syntax to avoid a super-long line!
+[dependencies.sqlx]
+version = "0.6"
+default-features = false
+features = [
+"runtime-tokio-rustls",
+"macros",
+"postgres",
+"uuid",
+"chrono",
+"migrate"
+]
