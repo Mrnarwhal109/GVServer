@@ -13,7 +13,13 @@ pub async fn subscribe(form: web::Form<FormData>,
     // Retrieving a connection from the application state!
     pool: web::Data<PgPool>,
 ) -> HttpResponse {
-
+    log::info!(
+        "Adding '{}' '{}' as a new subscriber.",
+        form.email,
+        form.name
+    );
+    log::info!("Saving new subscriber details in the database");
+    
     // 'Result' has two variants: 'Ok' and 'Err'.
     // The first for successes, the second for failures.
     // We use a 'match' statement to choose what to do based
@@ -34,9 +40,12 @@ pub async fn subscribe(form: web::Form<FormData>,
         .execute(pool.get_ref())
         .await
     {
-        Ok(_) => HttpResponse::Ok().finish(),
+        Ok(_) => {
+            log::info!("New subscriber details have been saved");
+            HttpResponse::Ok().finish()
+        },
         Err(e) => {
-        println!("Failed to execute query: {}", e);
+        log::error!("Failed to execute query: {:?}", e);
         HttpResponse::InternalServerError().finish()
         }
     }

@@ -9,3 +9,8 @@ exclusive access to that PgConnection because there cannot be two active mutable
 at the same time in the whole program. Quite neat.
 
 Look up Arc smart pointer
+
+Log level macros are: trace, debug, info, warn, error
+
+{:?} is the 'std::fmt::Debug format'
+{} is the 'std::fmt::Display format'
