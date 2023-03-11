@@ -1,0 +1,26 @@
+Invoke-RestMethod -Method "GET" -Uri "http://127.0.0.1:8000/invalid_af"
+
+Invoke-RestMethod -Method "GET" -Uri "http://127.0.0.1:8000/health_check"
+
+$body = @{
+    "email" = "csucc12345@here.com"
+    "name" = "Cucumber Succulence"
+} | ConvertTo-Json
+
+$headers = @{
+    'Content-Type' = 'application/json'
+}
+
+Invoke-RestMethod -Method "POST" -Uri "http://127.0.0.1:8000/subscriptions" -Headers $headers -Body $body
+
+$headers = @{
+    'Content-Type' = 'application/json'
+}
+
+Invoke-RestMethod -Method "POST" -Uri "http://127.0.0.1:8000/subscriptions" -Headers $headers -Body '{ "email": "sampletest@me.org", "name": "Cucumber Succulence" }'
+
+Invoke-RestMethod -Method "POST" -Uri "http://127.0.0.1:8000/subscriptions" -Headers $headers `
+-Body $Body
+
+Invoke-RestMethod -Method "POST" -Uri "http://127.0.0.1:8000/subscriptions" -Body $sample
+

@@ -14,3 +14,9 @@ Log level macros are: trace, debug, info, warn, error
 
 {:?} is the 'std::fmt::Debug format'
 {} is the 'std::fmt::Display format'
+
+// Launch with tracing
+cargo run RUST_LOG=trace
+
+// Launch with test logs
+TEST_LOG=true cargo test health_check_works | bunyan
