@@ -314,4 +314,49 @@ fn main() {
     println!("red is {}, {}, {}", red.0, red.1, red.2);
 }
 
+/*
+------------------------MEMORY AND OWNERSHIP
+*/
 
+// The drop function is called when a variable goes out of scope to clean up its memory.
+
+{
+    let s = String::from("hello"); // s is valid from this point forward
+
+    // do stuff with s
+}                                  // this scope is now over, and s is no
+                                   // longer valid. drop was presumably called on s
+
+let s1 = String::from("hello");
+let s2 = s1;
+// drop function is called on s1 and s1 is invalid.
+// The memory will be freed only once now when s2 goes out of scope.
+// s1 is said to be moved into s2, not shallow copied. It is essentially shallow copied but with those caveats.
+println!("{}, world!", s1); // Cannot work, s1 is invalid
+
+// clone, the deep copy
+let s1 = String::from("hello");
+let s2 = s1.clone(); // Heap copy
+
+println!("s1 = {}, s2 = {}", s1, s2); // Just fine
+
+
+let x = 5;
+let y = x;
+
+println!("x = {}, y = {}", x, y); // Just fine because they're on the stack.
+// They have the Copy trait we can place on types that are stored on the stack, as integers are
+
+
+// The Copy trait for stack copy cannot be on a type with the Drop trait. The drop trait is
+// for heap release upon scope exit
+
+/*
+As a general rule, any group of simple scalar values can implement Copy, and nothing that requires
+allocation or is some form of resource can implement Copy. Here are some of the types that implement Copy:
+All the integer types, such as u32.
+The Boolean type, bool, with values true and false.
+All the floating-point types, such as f64.
+The character type, char.
+Tuples, if they only contain types that also implement Copy. For example, (i32, i32) implements Copy, but (i32, String) does not.
+*/

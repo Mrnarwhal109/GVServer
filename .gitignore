@@ -1,5 +1,5 @@
 /target
 
-configuration.yaml
+configuration/base.yaml
 
 bash_run_postgres.sh

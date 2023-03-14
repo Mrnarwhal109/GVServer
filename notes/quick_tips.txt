@@ -20,3 +20,12 @@ cargo run RUST_LOG=trace
 
 // Launch with test logs
 TEST_LOG=true cargo test health_check_works | bunyan
+
+
+# Build a docker image tagged as "gv_server" according to the recipe
+# specified in 'Dockerfile'
+docker build --tag gv_server --file Dockerfile .
+
+# Run that image
+docker run gv_server
+docker run -p 8000:8000 gv_server
