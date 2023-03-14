@@ -24,3 +24,5 @@ Invoke-RestMethod -Method "POST" -Uri "http://127.0.0.1:8000/subscriptions" -Hea
 
 Invoke-RestMethod -Method "POST" -Uri "http://127.0.0.1:8000/subscriptions" -Body $sample
 
+First production request
+Invoke-RestMethod -Method "POST" -Uri "https://gvserver-2zih4.ondigitalocean.app/subscriptions" -Body "name=prod%20only&email=prod_only%40gmail.com"
