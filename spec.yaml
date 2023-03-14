@@ -1,7 +1,7 @@
-name: gv_server
+name: gvserver
 region: NYC1
 services:
-  - name: gv1server
+  - name: gv_server
     # Relative to the repository root
     dockerfile_path: Dockerfile
     source_dir: .
