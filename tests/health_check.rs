@@ -47,7 +47,7 @@ async fn spawn_app() -> TestApp {
     // All other invocations will instead skip execution.
     Lazy::force(&TRACING);
 
-    let listener = std::net::TcpListener::bind("127.0.0.1:0")
+    let listener = TcpListener::bind("127.0.0.1:0")
         .expect("Failed to bind random port");
 
     // We retrieve the port assigned to us by the OS
@@ -79,20 +79,19 @@ async fn spawn_app() -> TestApp {
 pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
     // println!("conn string without db: {}", &config.connection_string_without_db());
     // Create database
-    let mut connection = PgConnection::connect(
-        &config.connection_string_without_db().expose_secret()
-    )
+    let mut connection = PgConnection::connect_with(
+        &config.without_db())
         .await
         .expect("Failed to connect to Postgres");
 
     connection
-        .execute(&*format!(r#"CREATE DATABASE "{}";"#, config.database_name))
+        .execute(&*format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
         .await
         .expect("Failed to create database.");
 
     // Migrate database
-    let connection_pool = PgPool::connect(
-        &config.connection_string().expose_secret()
+    let connection_pool = PgPool::connect_with(
+        config.with_db()
     )
         .await
         .expect("Failed to connect to Postgres.");
