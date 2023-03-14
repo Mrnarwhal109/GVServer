@@ -30,7 +30,7 @@ async fn main() -> std::io::Result<()> {
     // Panic if we can't read configuration
     let configuration = get_configuration().expect("Failed to read configuration.");
 
-    // No longer async, given that we don't actually try to connect!
+    // No longer async, given that we don't actually try to connect
     let connection_pool = PgPoolOptions::new()
         .acquire_timeout(std::time::Duration::from_secs(2))
         .connect_lazy_with(configuration.database.with_db());
