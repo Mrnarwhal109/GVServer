@@ -29,3 +29,22 @@ docker build --tag gv_server --file Dockerfile .
 # Run that image
 docker run gv_server
 docker run -p 8000:8000 gv_server
+
+expose values of an object in useful ways:
+Look up inner(self), inner_mut(&mut self), inner_ref(&self), AsRef<T>
+
+?
+This two blocks are equivalent
+
+if let Err(error) = insert_subscriber(&pool, &new_subscriber)
+.await
+.map_err(|_| HttpResponse::InternalServerError().finish())
+{
+    return Err(error);
+}
+
+insert_subscriber(&pool, &new_subscriber)
+.await
+.map_err(|_| HttpResponse::InternalServerError().finish())?;
+
+The ? makes it so if it hits an error, it will return that error.
