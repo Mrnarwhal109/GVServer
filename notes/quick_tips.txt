@@ -70,3 +70,5 @@ struct SendEmailRequest<'a> {
     html_body: &'a str,
     text_body: &'a str,
 }
+
+void async functions end with Ok(())

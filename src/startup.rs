@@ -2,7 +2,7 @@ use std::net::TcpListener;
 use actix_web::dev::Server;
 use actix_web::{web, App, HttpServer};
 use actix_web::web::Data;
-use crate::routes::{health_check, subscribe};
+use crate::routes::{add_pinpoint, get_all_pinpoints, health_check, subscribe};
 use sqlx::PgPool;
 use tracing_actix_web::TracingLogger;
 use crate::email_client::EmailClient;
@@ -24,6 +24,8 @@ pub fn run(
             .route("/health_check", web::get().to(health_check))
             // A new entry in our routing table for POST /subscriptions requests
             .route("/subscriptions", web::post().to(subscribe))
+            .route("/pinpoints", web::post().to(add_pinpoint))
+            .route("/pinpoints", web::get().to(get_all_pinpoints))
         // Register the connection as part of the application state
             .app_data(db_pool.clone())
             .app_data(email_client.clone())
