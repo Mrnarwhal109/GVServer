@@ -2,6 +2,8 @@ Invoke-RestMethod -Method "GET" -Uri "http://127.0.0.1:8000/invalid_af"
 
 Invoke-RestMethod -Method "GET" -Uri "http://127.0.0.1:8000/health_check"
 
+Invoke-WebRequest -Method "GET" -Uri "http://127.0.0.1:8000/health_check" -UseBasicParsing
+
 $body = @{
     "email" = "csucc12345@here.com"
     "name" = "Cucumber Succulence"
@@ -26,3 +28,16 @@ Invoke-RestMethod -Method "POST" -Uri "http://127.0.0.1:8000/subscriptions" -Bod
 
 First production request
 Invoke-RestMethod -Method "POST" -Uri "https://gvserver-2zih4.ondigitalocean.app/subscriptions" -Body "name=prod%20only&email=prod_only%40gmail.com"
+
+
+$body = @{
+    "latitude" = 50.55221
+    "longitude" = 30.66775
+    "description" = "What a wonderful day to break production!"
+} | ConvertTo-Json
+
+$headers = @{
+    'Content-Type' = 'application/json'
+}
+
+Invoke-WebRequest -Method "POST" -Uri "http://127.0.0.1:8000/pinpoints" -Headers $headers -Body $body -UseBasicParsing
