@@ -130,13 +130,13 @@ pub async fn get_all_db_pinpoints(
         results.push(p);
     }
 
-    for r in results.as_slice() {
-        let lat = r.latitude.clone();
-        let log = r.longitude.clone();
-        let desc = r.description.clone();
-
-        println!("MANUAL PRINT latitude {}, longitude {}, description {}", lat, log, desc);
-    }
+    // for r in results.as_slice() {
+    //     let lat = r.latitude.clone();
+    //     let log = r.longitude.clone();
+    //     let desc = r.description.clone();
+    //
+    //     println!("MANUAL PRINT latitude {}, longitude {}, description {}", lat, log, desc);
+    // }
 
     Ok(results)
 }

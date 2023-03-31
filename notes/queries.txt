@@ -1,0 +1,8 @@
+DELETE FROM _sqlx_migrations;
+
+DROP TABLE subscriptions;
+DROP TABLE contents;
+DROP TABLE pinpoint_contents;
+DROP TABLE pinpoints;
+DROP TABLE user_pinpoints;
+DROP TABLE users;
