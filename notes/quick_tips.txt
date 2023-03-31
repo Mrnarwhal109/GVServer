@@ -34,7 +34,7 @@ expose values of an object in useful ways:
 Look up inner(self), inner_mut(&mut self), inner_ref(&self), AsRef<T>
 
 ?
-This two blocks are equivalent
+These two blocks are equivalent
 
 if let Err(error) = insert_subscriber(&pool, &new_subscriber)
 .await
@@ -48,3 +48,27 @@ insert_subscriber(&pool, &new_subscriber)
 .map_err(|_| HttpResponse::InternalServerError().finish())?;
 
 The ? makes it so if it hits an error, it will return that error.
+
+debug macro
+dbg!(&body)
+
+unimplemented macros
+todo!()
+unimplemented!()
+
+&str is a string slice, a just pointer to a memory buffer owned by somebody else
+
+// Lifetimes keep track of how long references are valid for;
+// the compiler makes sure that references do not stay around longer than the memory buffer they point to.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "PascalCase")]
+// Lifetime parameters always start with an apostrophe '
+struct SendEmailRequest<'a> {
+    from: &'a str,
+    to: &'a str,
+    subject: &'a str,
+    html_body: &'a str,
+    text_body: &'a str,
+}
+
+void async functions end with Ok(())

@@ -27,6 +27,7 @@ impl TryFrom<FormData> for NewSubscriber {
     }
 }
 
+
 #[tracing::instrument(
 name = "Adding a new subscriber",
 skip(form, pool),
