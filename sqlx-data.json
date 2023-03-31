@@ -1,5 +1,47 @@
 {
   "db": "PostgreSQL",
+  "b02f448058879c64c6ebf6d3e25b9597534869810ebdff732a81b226a0189045": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "latitude",
+          "ordinal": 1,
+          "type_info": "Float8"
+        },
+        {
+          "name": "longitude",
+          "ordinal": 2,
+          "type_info": "Float8"
+        },
+        {
+          "name": "description",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "added_at",
+          "ordinal": 4,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        true,
+        true,
+        true,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "\n        SELECT id, latitude, longitude, description, added_at FROM pinpoints\n        "
+  },
   "bcfcfebc6f5e8ffbf97d97c5a209be78b46d703924482cf8b43842705fcb7714": {
     "describe": {
       "columns": [],
@@ -14,5 +56,21 @@
       }
     },
     "query": "\n        INSERT INTO subscriptions (id, email, name, subscribed_at)\n        VALUES ($1, $2, $3, $4)\n        "
+  },
+  "efa3794fb73e956e4eb44ca671ab9f17ba69dc39637b7defca7f9302225727c7": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Float8",
+          "Float8",
+          "Text",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n        INSERT INTO pinpoints (id, latitude, longitude, description, added_at)\n        VALUES ($1, $2, $3, $4, $5)\n        "
   }
 }
