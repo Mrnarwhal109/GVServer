@@ -1,8 +1,10 @@
 use chrono::Utc;
 use uuid::Uuid;
 use actix_web::{HttpResponse, web};
+use actix_web::http::header::ContentType;
 use sqlx::PgPool;
-use crate::domain::NewPinpoint;
+use crate::domain::Pinpoint;
+use serde_json;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct PinpointData {
@@ -11,8 +13,22 @@ pub struct PinpointData {
     description: String
 }
 
+impl PinpointData {
+    pub fn new(
+        latitude: f64,
+        longitude: f64,
+        description: String
+    ) -> Self {
+        Self {
+            latitude,
+            longitude,
+            description
+        }
+    }
+}
+
 // Conversion spelled out for PinpointData into NewPinpoint
-impl TryFrom<PinpointData> for NewPinpoint {
+impl TryFrom<PinpointData> for Pinpoint {
     type Error = String;
     fn try_from(value: PinpointData) -> Result<Self, Self::Error> {
         let latitude = value.latitude;
@@ -21,7 +37,6 @@ impl TryFrom<PinpointData> for NewPinpoint {
         Ok(Self { latitude, longitude, description })
     }
 }
-
 
 #[tracing::instrument(
 name = "Adding a new pinpoint",
@@ -51,9 +66,14 @@ pub async fn add_pinpoint(
 }
 
 pub async fn get_all_pinpoints(
-    pool: &PgPool,
-) -> Result<String, actix_web::Error>  {
-    Ok(String::new())
+    pool: web::Data<PgPool>,
+) -> HttpResponse {
+    let db_data = get_all_db_pinpoints(&pool).await.unwrap();
+    let json = serde_json::to_string(&db_data).unwrap();
+
+    HttpResponse::Ok().
+        content_type(ContentType::json())
+        .body(json)
 }
 
 #[tracing::instrument(
@@ -62,7 +82,7 @@ skip(new_pinpoint, pool)
 )]
 pub async fn insert_pinpoint(
     pool: &PgPool,
-    new_pinpoint: &NewPinpoint,
+    new_pinpoint: &Pinpoint,
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
@@ -87,26 +107,36 @@ pub async fn insert_pinpoint(
     Ok(())
 }
 
-/*
+
 pub async fn get_all_db_pinpoints(
     pool: &PgPool,
 ) -> Result<Vec<PinpointData>, sqlx::Error> {
     let rows = sqlx::query!(
         r#"
-        SELECT id, coordinates, description, added_at FROM pinpoints
+        SELECT id, latitude, longitude, description, added_at FROM pinpoints
         "#
     )
-        .fetch_one(pool)
+        .fetch_all(pool)
         .await
-        .context("Failed to perform a query to retrieve pinpoints.")?;
+        .expect("Failed to perform a query to retrieve pinpoints.");
 
     let mut results: Vec<PinpointData> = Vec::new();
-    print!("MANUAL USER PRINT: ");
-    println!("{}", rows);
-    //for r in rows.iter() {
-    //    let innerItem = r;
-    //    results.append(innerItem);
-    //}
+    for r in rows.iter() {
+        let p = PinpointData::new(
+            r.latitude.unwrap(),
+            r.longitude.unwrap(),
+            r.description.clone().unwrap().to_string()
+        );
+        results.push(p);
+    }
+
+    for r in results.as_slice() {
+        let lat = r.latitude.clone();
+        let log = r.longitude.clone();
+        let desc = r.description.clone();
+
+        println!("MANUAL PRINT latitude {}, longitude {}, description {}", lat, log, desc);
+    }
+
     Ok(results)
 }
-*/

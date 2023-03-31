@@ -41,3 +41,5 @@ $headers = @{
 }
 
 Invoke-WebRequest -Method "POST" -Uri "http://127.0.0.1:8000/pinpoints" -Headers $headers -Body $body -UseBasicParsing
+
+Invoke-WebRequest -Method "GET" -Uri "http://127.0.0.1:8000/pinpoints" -UseBasicParsing

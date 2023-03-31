@@ -25,7 +25,7 @@ pub fn run(
             // A new entry in our routing table for POST /subscriptions requests
             .route("/subscriptions", web::post().to(subscribe))
             .route("/pinpoints", web::post().to(add_pinpoint))
-            //.route("/pinpoints", web::get().to(get_all_pinpoints))
+            .route("/pinpoints", web::get().to(get_all_pinpoints))
         // Register the connection as part of the application state
             .app_data(db_pool.clone())
             .app_data(email_client.clone())
