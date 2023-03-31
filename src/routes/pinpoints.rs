@@ -84,7 +84,7 @@ pub async fn insert_pinpoint(
     pool: &PgPool,
     new_pinpoint: &Pinpoint,
 ) -> Result<(), sqlx::Error> {
-    sqlx::query!(
+/*    sqlx::query!(
         r#"
         INSERT INTO pinpoints (id, latitude, longitude, description, added_at)
         VALUES ($1, $2, $3, $4, $5)
@@ -103,7 +103,7 @@ pub async fn insert_pinpoint(
             // Using the '?' operator to return early
             // if the function failed, returning a sqlx::Error
             // We will talk about error handling in depth later!
-        })?;
+        })?;*/
     Ok(())
 }
 
@@ -111,24 +111,24 @@ pub async fn insert_pinpoint(
 pub async fn get_all_db_pinpoints(
     pool: &PgPool,
 ) -> Result<Vec<PinpointData>, sqlx::Error> {
-    let rows = sqlx::query!(
+/*    let rows = sqlx::query!(
         r#"
         SELECT id, latitude, longitude, description, added_at FROM pinpoints
         "#
     )
         .fetch_all(pool)
         .await
-        .expect("Failed to perform a query to retrieve pinpoints.");
+        .expect("Failed to perform a query to retrieve pinpoints.");*/
 
     let mut results: Vec<PinpointData> = Vec::new();
-    for r in rows.iter() {
+/*    for r in rows.iter() {
         let p = PinpointData::new(
             r.latitude.unwrap(),
             r.longitude.unwrap(),
             r.description.clone().unwrap().to_string()
         );
         results.push(p);
-    }
+    }*/
 
     // for r in results.as_slice() {
     //     let lat = r.latitude.clone();
