@@ -318,6 +318,13 @@ fn main() {
 ------------------------MEMORY AND OWNERSHIP
 */
 
+Three Ownership Rules
+1.  Each value in Rust has a variable that's called its owner.
+2.  There can only be one owner at a time.
+3.  When the owner goes out of scope, the value will be dropped.
+
+A move is like a shallow copy, but the source is invalidated.
+
 // The drop function is called when a variable goes out of scope to clean up its memory.
 
 {

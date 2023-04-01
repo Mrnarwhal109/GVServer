@@ -72,3 +72,6 @@ struct SendEmailRequest<'a> {
 }
 
 void async functions end with Ok(())
+
+Due to the SQLX_OFFLINE=true in the dockerfile, schema changes must be up-to-date in the sqlx .json file.
+The file can be updated with cargo sqlx prepare -- --lib
