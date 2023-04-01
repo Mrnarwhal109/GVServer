@@ -1,7 +1,0 @@
-select * from information_schema.tables
-
-select * from _sqlx_migrations
-
-select * from _sqlx_migrations;
-delete from _sqlx_migrations where description = 'create pinpoints table';
-DROP TABLE pinpoint_contents;
