@@ -1,6 +1,5 @@
 use crate::domain::SubscriberEmail;
 use reqwest::Client;
-use crate::configuration::EmailClientSettings;
 use secrecy::{ExposeSecret, Secret};
 
 #[derive(Debug)]
