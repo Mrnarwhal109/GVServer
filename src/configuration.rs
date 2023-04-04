@@ -7,6 +7,7 @@ use sqlx::ConnectOptions;
 use crate::domain::SubscriberEmail;
 
 #[derive(serde::Deserialize)]
+#[derive(Clone)]
 pub struct Settings {
     pub database: DatabaseSettings,
     pub application: ApplicationSettings,
@@ -14,6 +15,7 @@ pub struct Settings {
 }
 
 #[derive(serde::Deserialize)]
+#[derive(Clone)]
 pub struct EmailClientSettings {
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub base_url: String,
@@ -24,13 +26,16 @@ pub struct EmailClientSettings {
 }
 
 #[derive(serde::Deserialize)]
+#[derive(Clone)]
 pub struct ApplicationSettings {
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
     pub host: String,
+    pub base_url: String
 }
 
 #[derive(serde::Deserialize)]
+#[derive(Clone)]
 pub struct DatabaseSettings{
     pub require_ssl: bool,
     pub username: String,

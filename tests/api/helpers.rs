@@ -1,12 +1,12 @@
 use once_cell::sync::Lazy;
 use sqlx::{PgPool, PgConnection, Connection, Executor};
 use sqlx::types::uuid;
-use std::net::TcpListener;
 use gv_server::configuration::{ get_configuration, DatabaseSettings };
-use gv_server::startup::run;
 use gv_server::telemetry::{get_subscriber, init_subscriber};
 use uuid::Uuid;
-use gv_server::email_client::EmailClient;
+use gv_server::startup::get_connection_pool;
+use gv_server::startup::Application;
+use wiremock::MockServer;
 
 // Ensure that the 'tracing' stack is only initialised once using 'once_cell'
 static TRACING: Lazy<()> = Lazy::new(|| {
@@ -34,57 +34,97 @@ static TRACING: Lazy<()> = Lazy::new(|| {
     }
 });
 
+pub struct ConfirmationLinks {
+    pub html: reqwest::Url,
+    pub plain_text: reqwest::Url
+}
+
 pub struct TestApp {
     pub address: String,
+    pub port: u16,
     pub db_pool: PgPool,
+    pub email_server: MockServer,
+}
+
+impl TestApp {
+    pub async fn post_subscriptions(&self, body: String) -> reqwest::Response {
+        reqwest::Client::new()
+            .post(&format!("{}/subscriptions", &self.address))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .body(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
+    /// Extract the confirmation links embedded in the request to the email API.
+    pub fn get_confirmation_links(
+        &self,
+        email_request: &wiremock::Request
+    ) -> ConfirmationLinks {
+        // Parse the body as JSON, starting from raw bytes
+        let body: serde_json::Value = serde_json::from_slice(
+            &email_request.body
+        ).unwrap();
+
+        // Extract the link from one of the request fields.
+        let get_link = |s: &str| {
+            let links: Vec<_> = linkify::LinkFinder::new()
+                .links(s)
+                .filter(|l| *l.kind() == linkify::LinkKind::Url)
+                .collect();
+            assert_eq!(links.len(), 1);
+            let raw_link = links[0].as_str().to_owned();
+            let mut confirmation_link = reqwest::Url::parse(&raw_link).unwrap();
+
+            // Let's make sure we don't call random APIs on the web
+            assert_eq!(confirmation_link.host_str().unwrap(), "127.0.0.1");
+            confirmation_link.set_port(Some(self.port)).unwrap();
+            confirmation_link
+        };
+
+        let html = get_link(&body["HtmlBody"].as_str().unwrap());
+        let plain_text = get_link(&body["TextBody"].as_str().unwrap());
+
+        ConfirmationLinks {
+            html,
+            plain_text
+        }
+    }
 }
 
 pub async fn spawn_app() -> TestApp {
-
-    // The first time 'initialize' is invoked, the code in 'TRACING' is executed.
-    // All other invocations will instead skip execution.
     Lazy::force(&TRACING);
 
-    let listener = TcpListener::bind("127.0.0.1:0")
-        .expect("Failed to bind random port");
+    // Launch a mock server to stand in for Postmark's API
+    let email_server = MockServer::start().await;
 
-    // We retrieve the port assigned to us by the OS
-    let port = listener.local_addr().unwrap().port();
-    let address = format!("http://127.0.0.1:{}", port);
+    // Randomize configuration to ensure test isolation
+    let configuration = {
+        let mut c = get_configuration().expect("Failed to read configuration.");
+        // Use a different database for each test case
+        c.database.database_name = Uuid::new_v4().to_string();
+        // Use a random OS port
+        c.application.port = 0;
+        c.email_client.base_url = email_server.uri();
+        c
+    };
 
-    let mut configuration = get_configuration()
-        .expect("Failed to read configuration.");
+    // Create and migrate the database
+    configure_database(&configuration.database).await;
 
-    configuration.database.database_name = Uuid::new_v4().to_string();
-    // println!("Manual print, database name is {}", configuration.database.database_name);
+    let application = Application::build(configuration.clone())
+        .await
+        .expect("Failed to build application.");
 
-    let connection_pool = configure_database(&configuration.database).await;
-
-    // Build a new email client
-    let sender_email = configuration.email_client.sender()
-        .expect("Invalid sender email address.");
-    let timeout = configuration.email_client.timeout();
-    let email_client = EmailClient::new(
-        configuration.email_client.base_url,
-        sender_email,
-        // Pass argument from configuration
-        configuration.email_client.authorization_token,
-        timeout
-    );
-
-    // Pass the new client to run
-
-    let server = run(listener, connection_pool.clone(), email_client)
-        .expect("Failed to bind address");
-
-    // Launch the server as a background task
-    // tokio::spawn returns a handle to the spawned future,
-    // but we have no use for it here, hence the non-binding let
-    let _ = tokio::spawn(server);
+    let application_port = application.port();
+    let _ = tokio::spawn(application.run_until_stopped());
 
     TestApp {
-        address,
-        db_pool: connection_pool,
+        address: format!("http://localhost:{}", application_port),
+        port: application_port,
+        db_pool: get_connection_pool(&configuration.database),
+        email_server,
     }
 }
 
