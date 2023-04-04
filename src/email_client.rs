@@ -3,6 +3,7 @@ use reqwest::Client;
 use crate::configuration::EmailClientSettings;
 use secrecy::{ExposeSecret, Secret};
 
+#[derive(Debug)]
 pub struct EmailClient {
     http_client: Client,
     base_url: String,
@@ -55,7 +56,7 @@ impl EmailClient {
         //    html_body: html_content.to_owned(),
         //    text_body: text_content.to_owned(),
         //};
-        let builder = self
+        self
             .http_client
             .post(&url)
             .header(
@@ -99,7 +100,7 @@ mod tests {
     struct SendEmailBodyMatcher;
 
     impl wiremock::Match for SendEmailBodyMatcher {
-        fn matches(&self, request: &wiremock::Request) -> bool {
+        fn matches(&self, request: &Request) -> bool {
             // Try to parse the body as a JSON value
             let result: Result<serde_json::Value, _> =
             serde_json::from_slice(&request.body);
@@ -154,7 +155,7 @@ mod tests {
         Mock::given(header_exists("X-Postmark-Server-Token"))
             .and(header("Content-Type", "application/json"))
             .and(path("/email"))
-            .and(wiremock::matchers::method("POST"))
+            .and(method("POST"))
             // Use our custom matcher!
             .and(SendEmailBodyMatcher)
             .respond_with(ResponseTemplate::new(200))
@@ -268,7 +269,7 @@ mod tests {
         Mock::given(header_exists("X-Postmark-Server-Token"))
             .and(header("Content-Type", "application/json"))
             .and(path("/email"))
-            .and(wiremock::matchers::method("POST"))
+            .and(method("POST"))
             .and(SendEmailBodyMatcher)
             .respond_with(ResponseTemplate::new(200))
             .expect(1) // Tell the mock server that during this test it should receive exactly one request that matches the conditions set by this mock.
