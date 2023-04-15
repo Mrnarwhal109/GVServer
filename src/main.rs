@@ -1,6 +1,6 @@
-use gv_server::startup::build;
 use gv_server::configuration::get_configuration;
 use gv_server::telemetry::{get_subscriber, init_subscriber};
+use gv_server::startup::Application;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -23,7 +23,7 @@ async fn main() -> std::io::Result<()> {
     // Panic if we can't read configuration
     let configuration = get_configuration().expect("Failed to read configuration.");
 
-    let server = build(configuration).await?;
-    server.await?;
+    let application = Application::build(configuration).await?;
+    application.run_until_stopped().await?;
     Ok(())
 }
