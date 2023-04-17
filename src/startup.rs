@@ -8,7 +8,7 @@ use crate::email_client::EmailClient;
 use crate::configuration::Settings;
 use sqlx::postgres::PgPoolOptions;
 use crate::configuration::DatabaseSettings;
-use crate::routes::{confirm, health_check, publish_newsletter, subscribe, home, login_form, login};
+use crate::routes::*;
 
 pub fn run(
     listener: TcpListener,
@@ -26,12 +26,16 @@ pub fn run(
             .wrap(TracingLogger::default())
             .route("/health_check", web::get().to(health_check))
             // A new entry in our routing table for POST /subscriptions requests
-            .route("/subscriptions", web::post().to(subscribe))
-            .route("/subscriptions/confirm", web::get().to(confirm))
-            .route("/newsletters", web::post().to(publish_newsletter))
-            .route("/", web::get().to(home))
-            .route("/login", web::get().to(login_form))
-            .route("/login", web::post().to(login))
+            //.route("/subscriptions", web::post().to(subscribe))
+            //.route("/subscriptions/confirm", web::get().to(confirm))
+            //.route("/newsletters", web::post().to(publish_newsletter))
+            //.route("/", web::get().to(home))
+            //.route("/login", web::get().to(login_form))
+            //.route("/login", web::post().to(login))
+            .route("/pinpoints", web::get().to(get_all_pinpoints))
+            .route("/pinpoints", web::post().to(add_pinpoint))
+            .route("/pinpoints", web::delete().to(delete_all_pinpoints))
+            .route("/pinpoints/user", web::delete().to(delete_all_user_pinpoints))
         // Register the connection as part of the application state
             .app_data(db_pool.clone())
             .app_data(email_client.clone())

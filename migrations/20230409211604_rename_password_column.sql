@@ -1,1 +1,1 @@
-ALTER TABLE users RENAME password TO password_hash;
+ALTER TABLE users RENAME phash TO password_hash;

@@ -81,7 +81,7 @@ async fn get_stored_credentials(
 ) -> Result<Option<(uuid::Uuid, Secret<String>)>, anyhow::Error> {
     let row = sqlx::query!(
         r#"
-        SELECT user_id, password_hash
+        SELECT id, password_hash
         FROM users
         WHERE username = $1
         "#,
@@ -90,7 +90,7 @@ async fn get_stored_credentials(
         .fetch_optional(pool)
         .await
         .context("Failed to perform a query to retrieve stored credentials.")?
-        .map(|row| (row.user_id, Secret::new(row.password_hash)));
+        .map(|row| (row.id, Secret::new(row.password_hash)));
 
     Ok(row)
 }
