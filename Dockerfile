@@ -46,7 +46,7 @@ COPY --from=builder /app/target/release/gv_server gv_server
 # We need the configuration file at runtime!
 COPY configuration configuration
 ENV APP_ENVIRONMENT production
-ENV RUST_BACKTRACE 1
+ENV RUST_BACKTRACE full
 
 # When 'docker run' is executed, launch the binary!
 ENTRYPOINT ["./gv_server"]

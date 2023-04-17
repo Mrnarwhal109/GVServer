@@ -11,7 +11,7 @@ use crate::domain::SubscriberEmail;
 pub struct Settings {
     pub database: DatabaseSettings,
     pub application: ApplicationSettings,
-    pub email_client: EmailClientSettings,
+    // pub email_client: EmailClientSettings,
 }
 
 #[derive(serde::Deserialize)]
@@ -22,6 +22,7 @@ pub struct EmailClientSettings {
     pub sender_email: String,
     // New (secret) configuration value
     pub authorization_token: Secret<String>,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
     pub timeout_milliseconds: u64
 }
 
