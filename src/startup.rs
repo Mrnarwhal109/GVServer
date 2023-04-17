@@ -13,12 +13,12 @@ use crate::routes::*;
 pub fn run(
     listener: TcpListener,
     db_pool: PgPool,
-    email_client: EmailClient,
+    //email_client: EmailClient,
     base_url: String,
 ) -> Result<Server, std::io::Error> {
     // Wrap the connection in a smart pointer
     let db_pool = Data::new(db_pool);
-    let email_client = Data::new(email_client);
+    //let email_client = Data::new(email_client);
     let base_url = Data::new(ApplicationBaseUrl(base_url));
     let server = HttpServer::new(move || {
         App::new()
@@ -38,7 +38,7 @@ pub fn run(
             .route("/pinpoints/user", web::delete().to(delete_all_user_pinpoints))
         // Register the connection as part of the application state
             .app_data(db_pool.clone())
-            .app_data(email_client.clone())
+            //.app_data(email_client.clone())
             .app_data(base_url.clone())
     })
         .listen(listener)?
@@ -81,6 +81,7 @@ impl Application {
         // No longer async, given that we don't actually try to connect
         let connection_pool = get_connection_pool(&configuration.database);
 
+        /*
         // Build an EmailClient using configuration
         let sender_email = configuration
             .email_client
@@ -94,6 +95,7 @@ impl Application {
             configuration.email_client.authorization_token,
             timeout,
         );
+        */
 
         // Bubble up the io::Error if we failed to bind the address
         // Otherwise call .await on our server
@@ -108,7 +110,6 @@ impl Application {
         let server = run(
             listener,
             connection_pool,
-            email_client,
             configuration.application.base_url,
         )?;
 
