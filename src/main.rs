@@ -5,6 +5,7 @@ use gv_server::startup::Application;
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
 
+    /*
     match dotenvy::dotenv()
     {
         Ok(_) => {
@@ -14,6 +15,7 @@ async fn main() -> std::io::Result<()> {
             println!("Error in main function: {}", e);
         }
     }
+    */
 
     let subscriber = get_subscriber(
         "gv_server".into(), "info".into(), std::io::stdout
