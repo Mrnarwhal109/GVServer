@@ -40,6 +40,8 @@ anyhow = "1"
 base64 = "0.13"
 sha3 = "0.9"
 argon2 = { version = "0.4", features = ["std"] }
+urlencoding = "2"
+htmlescape = "0.3"
 
 # Using table-like toml syntax to avoid a super-long line!
 [dependencies.sqlx]
@@ -59,7 +61,7 @@ features = [
 version = "0.11"
 default-features = false
 # We need the 'json' feature flag to serialize/deserialize JSON payloads
-features = ["json", "rustls-tls"]
+features = ["json", "rustls-tls", "cookies"]
 
 # Dev dependencies are used exclusively when running tests or examples
 # They do not get included in the final application binary!

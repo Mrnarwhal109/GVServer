@@ -9,12 +9,14 @@ use crate::configuration::Settings;
 use sqlx::postgres::PgPoolOptions;
 use crate::configuration::DatabaseSettings;
 use crate::routes::{confirm, health_check, publish_newsletter, subscribe, home, login_form, login};
+use secrecy::Secret;
 
 pub fn run(
     listener: TcpListener,
     db_pool: PgPool,
     email_client: EmailClient,
     base_url: String,
+    hmac_secret: Secret<String>,
 ) -> Result<Server, std::io::Error> {
     // Wrap the connection in a smart pointer
     let db_pool = Data::new(db_pool);
@@ -36,6 +38,7 @@ pub fn run(
             .app_data(db_pool.clone())
             .app_data(email_client.clone())
             .app_data(base_url.clone())
+            .app_data(Data::new(HmacSecret(hmac_secret.clone())))
     })
         .listen(listener)?
         .run();
@@ -106,6 +109,7 @@ impl Application {
             connection_pool,
             email_client,
             configuration.application.base_url,
+            configuration.application.hmac_secret,
         )?;
 
         // We "save" the bound port in one of 'Application''s fields
@@ -122,3 +126,6 @@ impl Application {
         self.server.await
     }
 }
+
+#[derive(Clone)]
+pub struct HmacSecret(pub Secret<String>);
