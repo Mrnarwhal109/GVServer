@@ -1,17 +1,14 @@
 use crate::helpers::spawn_app;
-// You can inspect what macro code gets generated using
-// 'cargo expand --test health_check' (<- name of the test file)
+
 #[tokio::test]
 async fn health_check_works() {
     // Arrange
-    let app = spawn_app()
-        .await;
-    // We need to bring in 'reqwest'
-    // to perform HTTP requests against our application.
+    let app = spawn_app().await;
     let client = reqwest::Client::new();
 
     // Act
     let response = client
+        // Use the returned application address
         .get(&format!("{}/health_check", &app.address))
         .send()
         .await

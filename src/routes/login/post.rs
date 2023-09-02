@@ -1,41 +1,54 @@
-use actix_web::{ HttpResponse, web, ResponseError };
+use crate::authentication::AuthError;
+use crate::authentication::{validate_credentials, Credentials};
+use crate::routes::error_chain_fmt;
+use crate::session_state::TypedSession;
+use actix_web::error::InternalError;
 use actix_web::http::header::LOCATION;
+use actix_web::web;
+use actix_web::HttpResponse;
 use secrecy::Secret;
 use sqlx::PgPool;
-use crate::authentication::{AuthError, Credentials, validate_credentials};
-use crate::routes::error_chain_fmt;
-use actix_web::http::StatusCode;
 
 #[derive(serde::Deserialize)]
-pub struct FormData {
+pub struct LoginData {
     username: String,
     password: Secret<String>,
 }
 
 #[tracing::instrument(
-skip(form, pool),
+skip(form, pool, session),
 fields(username=tracing::field::Empty, user_id=tracing::field::Empty)
 )]
-pub async fn login(
-    form: web::Form<FormData>,
-    pool: web::Data<PgPool>
-) -> Result<HttpResponse, LoginError> {
+// We are now injecting `PgPool` to retrieve stored credentials from the database
+pub async fn handle_login(
+    form: web::Form<LoginData>,
+    pool: web::Data<PgPool>,
+    session: TypedSession,
+) -> Result<HttpResponse, InternalError<LoginError>> {
     let credentials = Credentials {
         username: form.0.username,
         password: form.0.password,
     };
-    tracing::Span::current()
-        .record("username", &tracing::field::display(&credentials.username));
-    let user_id = validate_credentials(credentials, &pool)
-        .await
-        .map_err(|e| match e {
-            AuthError::InvalidCredentials(_) => LoginError::AuthError(e.into()),
-            AuthError::UnexpectedError(_) => LoginError::UnexpectedError(e.into()),
-        })?;
-    tracing::Span::current().record("user_id", &tracing::field::display(&user_id));
-    Ok(HttpResponse::SeeOther()
-        .insert_header((LOCATION, "/"))
-           .finish())
+    tracing::Span::current().record("username", &tracing::field::display(&credentials.username));
+    match validate_credentials(credentials, &pool).await {
+        Ok(user_id) => {
+            tracing::Span::current().record("user_id", &tracing::field::display(&user_id));
+            session.renew();
+            session
+                .insert_user_id(user_id)
+                .map_err(|e| login_redirect(LoginError::UnexpectedError(e.into())))?;
+            Ok(HttpResponse::SeeOther()
+                .insert_header((LOCATION, "/admin/dashboard"))
+                .finish())
+        }
+        Err(e) => {
+            let e = match e {
+                AuthError::InvalidCredentials(_) => LoginError::AuthError(e.into()),
+                AuthError::UnexpectedError(_) => LoginError::UnexpectedError(e.into()),
+            };
+            Err(login_redirect(e))
+        }
+    }
 }
 
 #[derive(thiserror::Error)]
@@ -51,13 +64,3 @@ impl std::fmt::Debug for LoginError {
         error_chain_fmt(self, f)
     }
 }
-
-impl ResponseError for LoginError {
-    fn status_code(&self) -> StatusCode {
-        match self {
-            LoginError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            LoginError::AuthError(_) => StatusCode::UNAUTHORIZED,
-        }
-    }
-}
-

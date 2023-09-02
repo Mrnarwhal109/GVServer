@@ -1,9 +1,6 @@
-mod subscriber_name;
-mod subscriber_email;
-mod new_subscriber;
-mod new_pinpoint;
+pub mod pinpoint;
+pub mod user;
 
-pub use subscriber_name::SubscriberName;
-pub use new_subscriber::NewSubscriber;
-pub use subscriber_email::SubscriberEmail;
-pub use new_pinpoint::Pinpoint;
+pub use pinpoint::Pinpoint;
+pub use pinpoint::PinpointData;
+pub use pinpoint::TempUsername;
