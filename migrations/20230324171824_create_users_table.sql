@@ -5,6 +5,6 @@ CREATE TABLE users(
 	email TEXT NOT NULL UNIQUE,
 	username TEXT NOT NULL,
 	phash TEXT NOT NULL,
-	role_id INT NOT NULL DEFAULT 0,
+	salt TEXT NOT NULL,
 	added_at timestamptz NOT NULL DEFAULT clock_timestamp()
 );

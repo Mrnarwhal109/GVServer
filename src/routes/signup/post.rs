@@ -12,12 +12,14 @@ use argon2::password_hash::SaltString;
 use secrecy::{ExposeSecret, Secret};
 use uuid::Uuid;
 use crate::authentication::password;
-use crate::domain::user::AppUser;
+use crate::domain::app_user::AppUser;
+use crate::domain::user_email::UserEmail;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct SignUpData {
-    username: String,
-    password: Secret<String>,
+    pub email: String,
+    pub username: String,
+    pub pw: String,
 }
 
 #[derive(thiserror::Error)]
@@ -47,22 +49,24 @@ impl ResponseError for SignUpError {
 name = "Adding a new user",
 skip(payload, pool),
 fields(
-subscriber_email = %payload.email,
-subscriber_name = %payload.name
+user_email = %payload.email,
+username = %payload.username
 )
 )]
 pub async fn handle_signup(
     payload: web::Json<SignUpData>,
     pool: web::Data<PgPool>,
 ) -> Result<HttpResponse, SignUpError> {
-    let new_subscriber = payload.0.try_into().map_err(SignUpError::ValidationError)?;
+    // Salt is generated from initialization
+    let new_user = AppUser::try_from(payload.0)
+        .map_err(SignUpError::ValidationError)?;
     let mut transaction = pool
         .begin()
         .await
         .context("Failed to acquire a Postgres connection from the pool")?;
-    let subscriber_id = store_new_user(&pool, &mut transaction, )
+    let subscriber_id = store_new_user(&mut transaction, &new_user)
         .await
-        .context("Failed to insert new subscriber in the database.")?;
+        .context("Failed to insert new user into the database.")?;
     transaction
         .commit()
         .await
@@ -70,26 +74,24 @@ pub async fn handle_signup(
     Ok(HttpResponse::Ok().finish())
 }
 
-#[tracing::instrument(
-name = "Saving new subscriber details in the database",
-skip(tran, user)
-)]
-async fn store_new_user(pool: &PgPool, tran: &mut Transaction<'_, Postgres>, user: AppUser) {
-    let salt = password::get_salt_string();
-    // Match production parameters
-    let password_hash = password::compute_password_hash(
-        &user.pw, user.salt.expose_secret())?;
+async fn store_new_user(
+    tran: &mut Transaction<'_, Postgres>,
+    user: &AppUser
+) -> Result<Uuid, sqlx::Error> {
+    let uuid = user.unique_id;
+    let salt = user.salt.to_string();
     sqlx::query!(
-            "INSERT INTO users (user_id, username, password_hash, salt)
+            "INSERT INTO users (id, email, username, phash, salt, added_at)
             VALUES ($1, $2, $3, $4)",
-            self.user_id,
-            self.username,
-            password_hash,
+            user.unique_id,
+            user.username,
+            password_hash.expose_secret(),
             salt,
+            Utc::now()
         )
-        .execute(pool)
-        .await
-        .expect("Failed to store test user.");
+        .execute(tran)
+        .await?;
+    Ok(uuid)
 }
 
 

@@ -6,6 +6,9 @@ use argon2::{Algorithm, Argon2, Params, PasswordHash, PasswordHasher, PasswordVe
 use secrecy::{ExposeSecret, Secret};
 use sqlx::PgPool;
 use base64;
+use base64::decode;
+use base64::{Engine as _, alphabet, engine::{self, general_purpose}};
+
 
 #[derive(thiserror::Error, Debug)]
 pub enum AuthError {
@@ -91,30 +94,6 @@ fn verify_password_hash(
         .map_err(AuthError::InvalidCredentials)
 }
 
-#[tracing::instrument(name = "Change password", skip(password, pool))]
-pub async fn change_password(
-    user_id: uuid::Uuid,
-    password: Secret<String>,
-    pool: &PgPool,
-) -> Result<(), anyhow::Error> {
-    let password_hash = spawn_blocking_with_tracing(move || compute_password_hash(password))
-        .await?
-        .context("Failed to hash password")?;
-    sqlx::query!(
-        r#"
-        UPDATE users
-        SET password_hash = $1
-        WHERE user_id = $2
-        "#,
-        password_hash.expose_secret(),
-        user_id
-    )
-        .execute(pool)
-        .await
-        .context("Failed to change user's password in the database.")?;
-    Ok(())
-}
-
 pub fn get_salt_string() -> SaltString {
     let salt = SaltString::generate(&mut rand::thread_rng());
     salt
@@ -122,6 +101,7 @@ pub fn get_salt_string() -> SaltString {
 
 pub fn compute_password_hash(password: &Secret<String>, salt: &SaltString)
     -> Result<Secret<String>, anyhow::Error> {
+    // Match production parameters
     let password_hash = Argon2::new(
         Algorithm::Argon2id,
         Version::V0x13,
@@ -142,8 +122,8 @@ fn basic_authentication(headers: &HeaderMap) -> Result<Credentials, anyhow::Erro
     let base64encoded_credentials = header_value
         .strip_prefix("Basic ")
         .context("The authorization scheme was not 'Basic'.")?;
-    let decoded_bytes = base64::engine::general_purpose::STANDARD
-        .decode(base64encoded_credentials)
+    let decoded_bytes =
+    base64::decode(base64encoded_credentials)
         .context("Failed to base64-decode 'Basic' credentials.")?;
     let decoded_credentials = String::from_utf8(decoded_bytes)
         .context("The decoded credential string is not valid UTF8.")?;

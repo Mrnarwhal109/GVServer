@@ -9,11 +9,7 @@ use serde_json;
 
 #[tracing::instrument(
 name = "Adding a new pinpoint",
-skip(pinpoint, pool),
-fields(
-pinpoint_latitude = %pinpoint.latitude,
-pinpoint_longitude = %pinpoint.longitude
-)
+skip(pinpoint, pool)
 )]
 pub async fn handle_add_pinpoint(
     pinpoint: web::Json<PinpointData>,
