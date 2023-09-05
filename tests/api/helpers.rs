@@ -1,14 +1,16 @@
 use argon2::password_hash::SaltString;
 use argon2::{Algorithm, Argon2, Params, PasswordHasher, Version};
+use chrono::{DateTime, Duration, Utc};
+use jsonwebtoken::{encode, EncodingKey, Header, Validation};
 use once_cell::sync::Lazy;
+use secrecy::ExposeSecret;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use wiremock::MockServer;
-use gv_server::configuration::{get_configuration, DatabaseSettings};
-use gv_server::email_client::EmailClient;
-use gv_server::issue_delivery_worker::{try_execute_task, ExecutionOutcome};
-use gv_server::startup::{get_connection_pool, Application};
-use gv_server::telemetry::{get_subscriber, init_subscriber};
+use gvserver::authentication::{AuthParameters, Claims};
+use gvserver::configuration::{get_configuration, DatabaseSettings};
+use gvserver::startup::{get_connection_pool, Application};
+use gvserver::telemetry::{get_subscriber, init_subscriber};
 
 // Ensure that the `tracing` stack is only initialised once using `once_cell`
 static TRACING: Lazy<()> = Lazy::new(|| {
@@ -32,23 +34,54 @@ pub struct TestApp {
 }
 
 impl TestApp {
-    pub async fn post_subscriptions(&self, body: String) -> reqwest::Response {
+    pub async fn create_jwt(&self, username: &str) -> String {
+        let _config = get_configuration().expect("Failed to get config.");
+        let key = _config.application.jwt_secret.expose_secret().as_bytes();
+
+        // Token allegedly expires in 7 days, subject to change
+        let mut _date: DateTime<Utc> = Utc::now() + Duration::days(7);
+
+        let my_claims = Claims {
+            sub: String::from(username),
+            exp: _date.timestamp() as usize,
+        };
+        let token = encode(
+            &Header::default(),
+            &my_claims,
+            &EncodingKey::from_secret(key),
+        ).unwrap();
+        token
+    }
+
+    pub async fn get_pinpoints(&self, body: String, jwt: String) -> reqwest::Response
+    {
         self.api_client
-            .post(&format!("{}/subscriptions", &self.address))
-            .header("Content-Type", "application/x-www-form-urlencoded")
+            .get(&format!("{}/pinpoints", &self.address))
+            .header("Content-Type", "application/json")
+            .header("Authorization", jwt)
             .body(body)
             .send()
             .await
             .expect("Failed to execute request.")
     }
 
-    pub async fn post_login<Body>(&self, body: &Body) -> reqwest::Response
-        where
-            Body: serde::Serialize,
+    pub async fn post_login(&self, body: String) -> reqwest::Response
     {
         self.api_client
             .post(&format!("{}/login", &self.address))
-            .form(body)
+            .header("Content-Type", "application/json")
+            .body(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
+    pub async fn post_signup(&self, body: String) -> reqwest::Response
+    {
+        self.api_client
+            .post(&format!("{}/signup", &self.address))
+            .header("Content-Type", "application/json")
+            .body(body)
             .send()
             .await
             .expect("Failed to execute request.")
@@ -97,7 +130,7 @@ pub async fn spawn_app() -> TestApp {
         api_client: client,
     };
 
-    test_app.test_user.store_new_user(&test_app.db_pool).await;
+    //test_app.test_user.store_new_user(&test_app.db_pool).await;
 
     test_app
 }
@@ -139,6 +172,7 @@ impl TestUser {
         }
     }
 
+    /*
     pub async fn login(&self, app: &TestApp) {
         app.post_login(&serde_json::json!({
             "username": &self.username,
@@ -146,6 +180,8 @@ impl TestUser {
         }))
             .await;
     }
+
+     */
 
     async fn store(&self, pool: &PgPool) {
         todo!()

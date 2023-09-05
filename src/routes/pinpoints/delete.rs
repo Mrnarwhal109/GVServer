@@ -47,6 +47,8 @@ skip(pool)
 pub async fn delete_all_db_pinpoints(
     pool: &PgPool,
 ) -> Result<(), sqlx::Error> {
+    todo!()
+    /*
     sqlx::query!(
         r#"
         DELETE FROM pinpoints;
@@ -63,6 +65,7 @@ pub async fn delete_all_db_pinpoints(
         })?;
 
     Ok(())
+    */
 }
 
 #[tracing::instrument(
@@ -73,6 +76,8 @@ pub async fn delete_all_user_db_pinpoints(
     pool: &PgPool,
     username: &String
 ) -> Result<(), sqlx::Error> {
+    todo!();
+    /*
     sqlx::query!(
         r#"
         DELETE FROM pinpoints WHERE username = $1;
@@ -87,4 +92,6 @@ pub async fn delete_all_user_db_pinpoints(
         })?;
 
     Ok(())
+
+     */
 }

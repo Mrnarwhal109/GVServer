@@ -1,9 +1,8 @@
 use std::fmt::{Debug, Display};
 use tokio::task::JoinError;
-use gv_server::configuration::get_configuration;
-use gv_server::issue_delivery_worker::run_worker_until_stopped;
-use gv_server::startup::Application;
-use gv_server::telemetry::{get_subscriber, init_subscriber};
+use gvserver::configuration::get_configuration;
+use gvserver::startup::Application;
+use gvserver::telemetry::{get_subscriber, init_subscriber};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

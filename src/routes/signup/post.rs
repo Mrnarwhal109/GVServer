@@ -47,11 +47,7 @@ impl ResponseError for SignUpError {
 
 #[tracing::instrument(
 name = "Adding a new user",
-skip(payload, pool),
-fields(
-user_email = %payload.email,
-username = %payload.username
-)
+skip(payload, pool)
 )]
 pub async fn handle_signup(
     payload: web::Json<SignUpData>,
@@ -76,18 +72,21 @@ pub async fn handle_signup(
 
 async fn store_new_user(
     tran: &mut Transaction<'_, Postgres>,
-    user: &AppUser
+    user: &AppUser,
 ) -> Result<Uuid, sqlx::Error> {
     let uuid = user.unique_id;
+    let email = user.email.to_string();
+    let phash = user.phash.expose_secret().to_string();
     let salt = user.salt.to_string();
     sqlx::query!(
-            "INSERT INTO users (id, email, username, phash, salt, added_at)
-            VALUES ($1, $2, $3, $4)",
+            "INSERT INTO users (id, email, username, phash, salt, role_id)
+            VALUES ($1, $2, $3, $4, $5, $6)",
             user.unique_id,
+            email,
             user.username,
-            password_hash.expose_secret(),
+            phash,
             salt,
-            Utc::now()
+            2
         )
         .execute(tran)
         .await?;

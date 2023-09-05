@@ -38,7 +38,8 @@ pub async fn insert_pinpoint(
     pool: &PgPool,
     new_pinpoint: &Pinpoint,
 ) -> Result<(), sqlx::Error> {
-    sqlx::query!(
+    todo!();
+/*    sqlx::query!(
         r#"
         INSERT INTO pinpoints (id, latitude, longitude, description, username, added_at)
         VALUES ($1, $2, $3, $4, $5, $6)
@@ -58,7 +59,7 @@ pub async fn insert_pinpoint(
             // Using the '?' operator to return early
             // if the function failed, returning a sqlx::Error
             // We will talk about error handling in depth later!
-        })?;
+        })?;*/
 
 
     Ok(())

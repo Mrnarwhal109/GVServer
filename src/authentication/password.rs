@@ -28,7 +28,8 @@ async fn get_stored_credentials(
     username: &str,
     pool: &PgPool,
 ) -> Result<Option<(uuid::Uuid, Secret<String>)>, anyhow::Error> {
-    let row = sqlx::query!(
+    todo!();
+/*    let row = sqlx::query!(
         r#"
         SELECT u.user_id, u.password_hash, u.salt
         FROM users u
@@ -40,7 +41,7 @@ async fn get_stored_credentials(
         .await
         .context("Failed to perform a query to retrieve stored credentials.")?
         .map(|row| (row.user_id, Secret::new(row.password_hash)));
-    Ok(row)
+    Ok(row)*/
 }
 
 #[tracing::instrument(name = "Validate credentials", skip(credentials, pool))]
