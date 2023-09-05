@@ -14,6 +14,8 @@ pub struct AppUser {
     pub username: String,
     pub phash: Secret<String>,
     pub salt: SaltString,
+    pub role_id: i32,
+    pub role_title: String,
 }
 
 impl TryFrom<SignUpData> for AppUser {
@@ -33,6 +35,7 @@ impl TryFrom<SignUpData> for AppUser {
                     return Err(Self::Error::new())
                 }
         };
-        Ok(Self{unique_id, email, username, phash, salt})
+        Ok(Self{unique_id, email, username, phash, salt,
+            role_id: -1, role_title: String::from("UNKNOWN") })
     }
 }

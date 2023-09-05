@@ -7,6 +7,7 @@ use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use sqlx::{PgPool, Postgres, Transaction};
 use std::convert::{TryFrom, TryInto};
+use std::fmt::Debug;
 use argon2::{Argon2, Algorithm, Version, Params};
 use argon2::password_hash::SaltString;
 use secrecy::{ExposeSecret, Secret};
@@ -78,9 +79,11 @@ async fn store_new_user(
     let email = user.email.to_string();
     let phash = user.phash.expose_secret().to_string();
     let salt = user.salt.to_string();
-    sqlx::query!(
-            "INSERT INTO users (id, email, username, phash, salt, role_id)
-            VALUES ($1, $2, $3, $4, $5, $6)",
+    let execute_result = sqlx::query!(
+            "WITH main AS \
+            (INSERT INTO users (id, email, username, phash, salt) \
+            VALUES ($1, $2, $3, $4, $5) RETURNING id) \
+            INSERT INTO user_roles SELECT id, $6 FROM main; ",
             user.unique_id,
             email,
             user.username,
@@ -90,6 +93,8 @@ async fn store_new_user(
         )
         .execute(tran)
         .await?;
+    let rows_hit = execute_result.rows_affected().to_string();
+    println!("Rows hit: {}", rows_hit);
     Ok(uuid)
 }
 

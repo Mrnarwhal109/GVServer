@@ -5,3 +5,4 @@ pub mod routes;
 pub mod startup;
 pub mod telemetry;
 pub mod utils;
+pub mod database_direct_models;
