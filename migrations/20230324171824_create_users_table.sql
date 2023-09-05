@@ -39,4 +39,4 @@ INSERT INTO roles(id, title) VALUES(1, 'RESTRICTED');
 INSERT INTO roles(id, title) VALUES(2, 'BASIC');
 INSERT INTO roles(id, title) VALUES(3, 'ELEVATED');
 INSERT INTO roles(id, title) VALUES(4, 'ADMIN');
-INSERT INTO roles(id, title) VALUES(6, 'VIBE_GOD');
+INSERT INTO roles(id, title) VALUES(5, 'VIBE_GOD');

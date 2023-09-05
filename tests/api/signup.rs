@@ -74,8 +74,10 @@ async fn sign_up_rejects_a_duplicate_user(running_app: &TestApp) {
 
     match user_rows {
         Ok(row) => {
-            println!("DbUser returned with username {}, email {}, phash {}, salt {}",
-                     &row.username, &row.email, &row.phash, &row.salt);
+            println!("DbUser returned with username {}, email {}, phash {}, salt {} \
+            role_id {}, role_title {}",
+                     &row.username, &row.email, &row.phash, &row.salt,
+            &row.role_id, &row.role_title);
             assert_eq!(row.username, username)
         }
         Err(e) => {
