@@ -1,14 +1,10 @@
-use argon2::password_hash::SaltString;
-use argon2::{Algorithm, Argon2, Params, PasswordHasher, Version};
-use chrono::{DateTime, Duration, Utc};
-use jsonwebtoken::{encode, EncodingKey, Header, Validation};
 use once_cell::sync::Lazy;
-use secrecy::ExposeSecret;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
-use wiremock::MockServer;
-use gvserver::authentication::{AuthParameters, Claims};
+use gvserver::authentication::{AuthService};
 use gvserver::configuration::{get_configuration, DatabaseSettings};
+use gvserver::database_direct_models::DbUser;
+use gvserver::routes::signup::post::SignUpData;
 use gvserver::startup::{get_connection_pool, Application};
 use gvserver::telemetry::{get_subscriber, init_subscriber};
 
@@ -31,60 +27,58 @@ pub struct TestApp {
     pub db_pool: PgPool,
     pub test_user: TestUser,
     pub api_client: reqwest::Client,
+    pub auth_service: AuthService
 }
 
 impl TestApp {
     pub async fn create_jwt(&self, username: &str) -> String {
-        let _config = get_configuration().expect("Failed to get config.");
-        let key = _config.application.jwt_secret.expose_secret().as_bytes();
-
-        // Token allegedly expires in 7 days, subject to change
-        let mut _date: DateTime<Utc> = Utc::now() + Duration::days(7);
-
-        let my_claims = Claims {
-            sub: String::from(username),
-            exp: _date.timestamp() as usize,
-        };
-        let token = encode(
-            &Header::default(),
-            &my_claims,
-            &EncodingKey::from_secret(key),
-        ).unwrap();
-        token
+        self.auth_service.create_jwt(username).await
     }
 
-    pub async fn get_pinpoints(&self, body: String, jwt: String) -> reqwest::Response
+    pub async fn get_pinpoints(&self, jwt: String) -> reqwest::Response
     {
         self.api_client
             .get(&format!("{}/pinpoints", &self.address))
             .header("Content-Type", "application/json")
             .header("Authorization", jwt)
-            .body(body)
             .send()
             .await
             .expect("Failed to execute request.")
     }
 
-    pub async fn post_login(&self, body: String) -> reqwest::Response
+    pub async fn post_login(&self, username: String, pw: String) -> reqwest::Response
     {
-        self.api_client
+        let response = self.api_client
             .post(&format!("{}/login", &self.address))
-            .header("Content-Type", "application/json")
-            .body(body)
+            .basic_auth(username, Some(pw))
             .send()
             .await
-            .expect("Failed to execute request.")
+            .expect("Failed to execute request.");
+        response
     }
 
-    pub async fn post_signup(&self, body: String) -> reqwest::Response
+    pub async fn post_signup(&self, json_data: String, username: String, pw: String) -> reqwest::Response
     {
         self.api_client
             .post(&format!("{}/signup", &self.address))
+            .basic_auth(username, Some(pw))
             .header("Content-Type", "application/json")
-            .body(body)
+            .body(json_data)
             .send()
             .await
             .expect("Failed to execute request.")
+    }
+
+    pub async fn select_one_user(&self, username: String) -> Result<DbUser, anyhow::Error> {
+        let user_rows = sqlx::query_as!(
+        DbUser,
+        "SELECT U.id AS unique_id, U.email AS email, U.username AS username, \
+        U.phash AS phash, U.salt AS salt, R.id AS role_id, R.title AS role_title \
+        FROM users U \
+        INNER JOIN user_roles UR on UR.user_id = U.id \
+        INNER JOIN roles R on UR.role_id = R.id \
+        WHERE U.username = $1; ", username).fetch_one(&self.db_pool).await?;
+        Ok(user_rows)
     }
 }
 
@@ -122,12 +116,15 @@ pub async fn spawn_app() -> TestApp {
         .build()
         .unwrap();
 
+    let auth_service = AuthService::new(configuration.application.jwt_secret);
+
     let test_app = TestApp {
         address: format!("http://localhost:{}", application_port),
         port: application_port,
         db_pool: get_connection_pool(&configuration.database),
         test_user: TestUser::generate(),
         api_client: client,
+        auth_service
     };
 
     //test_app.test_user.store_new_user(&test_app.db_pool).await;
@@ -158,7 +155,6 @@ async fn configure_database(config: &DatabaseSettings) -> PgPool {
 }
 
 pub struct TestUser {
-    user_id: Uuid,
     pub username: String,
     pub password: String,
 }
@@ -166,7 +162,6 @@ pub struct TestUser {
 impl TestUser {
     pub fn generate() -> Self {
         Self {
-            user_id: Uuid::new_v4(),
             username: Uuid::new_v4().to_string(),
             password: Uuid::new_v4().to_string(),
         }
@@ -182,10 +177,6 @@ impl TestUser {
     }
 
      */
-
-    async fn store(&self, pool: &PgPool) {
-        todo!()
-    }
 }
 
 pub fn assert_is_redirect_to(response: &reqwest::Response, location: &str) {

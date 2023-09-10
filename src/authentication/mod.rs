@@ -4,6 +4,7 @@ pub mod auth_service;
 pub mod middleware;
 mod auth_token;
 mod auth_permissions;
+mod jwts;
 
 pub use password::*;
 pub use auth_parameters::*;

@@ -1,12 +1,9 @@
 use argon2::password_hash::SaltString;
 use secrecy::Secret;
-use serde::Serialize;
-use serde::Deserialize;
-use serde_json::from_str;
 use uuid::Uuid;
-use crate::authentication::{compute_password_hash, get_salt_string};
+use crate::authentication::{compute_password_hash, rand_salt_string};
 use crate::domain::user_email::UserEmail;
-use crate::routes::post::SignUpData;
+use crate::routes::signup::post::{UserSignUp, SignUpError};
 
 pub struct AppUser {
     pub unique_id: Uuid,
@@ -18,23 +15,20 @@ pub struct AppUser {
     pub role_title: String,
 }
 
-impl TryFrom<SignUpData> for AppUser {
-    type Error = String;
+impl TryFrom<UserSignUp> for AppUser {
+    type Error = SignUpError;
 
-    fn try_from(value: SignUpData) -> Result<Self, Self::Error> {
-        let unique_id: Uuid = uuid::Uuid::new_v4();
-        let email: UserEmail = UserEmail::parse(value.email)?;
+    fn try_from(value: UserSignUp) -> Result<Self, Self::Error> {
+        let unique_id: Uuid = Uuid::new_v4();
+        let email: UserEmail = UserEmail::parse(value.email)
+            .map_err(SignUpError::ValidationError)?;
         let pw: Secret<String> = Secret::new(value.pw);
         let username = value.username;
-        let salt = get_salt_string();
-        let phash = match compute_password_hash(&pw, &salt) {
-            Ok(hash) => hash,
-            Err(e) =>
-                {
-                    println!("Error computing password hash!");
-                    return Err(Self::Error::new())
-                }
-        };
+        let salt = rand_salt_string();
+
+        let phash = compute_password_hash(&pw, &salt)
+            .map_err(|e| SignUpError::ValidationError(e.to_string()))?;
+
         Ok(Self{unique_id, email, username, phash, salt,
             role_id: -1, role_title: String::from("UNKNOWN") })
     }

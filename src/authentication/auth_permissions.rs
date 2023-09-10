@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter};
+
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub enum AuthPermissionsMode {
     None,
@@ -6,9 +8,15 @@ pub enum AuthPermissionsMode {
     MAX
 }
 
+impl Display for AuthPermissionsMode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", "test")
+    }
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct AuthPermissions {
-    mode: AuthPermissionsMode
+    pub mode: AuthPermissionsMode
 }
 
 impl AuthPermissions {

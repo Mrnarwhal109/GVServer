@@ -1,7 +1,5 @@
 use uuid::Uuid;
-use crate::authentication::{compute_password_hash, get_salt_string};
-use crate::domain::user_email::UserEmail;
-use crate::routes::post::SignUpData;
+use crate::authentication::{rand_salt_string};
 
 pub struct DbUser {
     pub unique_id: Uuid,

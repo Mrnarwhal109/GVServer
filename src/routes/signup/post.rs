@@ -1,33 +1,34 @@
-use crate::startup::ApplicationBaseUrl;
-use actix_web::http::StatusCode;
-use actix_web::{web, HttpResponse, ResponseError};
-use anyhow::Context;
-use chrono::Utc;
-use rand::distributions::Alphanumeric;
-use rand::{thread_rng, Rng};
+use actix_web::http::{header, StatusCode};
+use actix_web::{web, HttpResponse, ResponseError, HttpRequest};
+use anyhow::{Context};
 use sqlx::{PgPool, Postgres, Transaction};
-use std::convert::{TryFrom, TryInto};
-use std::fmt::Debug;
-use argon2::{Argon2, Algorithm, Version, Params};
-use argon2::password_hash::SaltString;
+use std::convert::{TryFrom};
 use secrecy::{ExposeSecret, Secret};
 use uuid::Uuid;
-use crate::authentication::password;
+use crate::authentication::basic_authentication;
 use crate::domain::app_user::AppUser;
-use crate::domain::user_email::UserEmail;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct SignUpData {
+    pub email: String,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct UserSignUp {
     pub email: String,
     pub username: String,
     pub pw: String,
 }
 
+// Using .map_err(SignUpError::ChoiceType)?;
+// required the try_from function called before map_err
+// to choose the type Error of the type inside the enum choice,
+// a.k.a. String for ValidationError(String).
 #[derive(thiserror::Error)]
 pub enum SignUpError {
     #[error("{0}")]
     ValidationError(String),
-    #[error(transparent)]
+    #[error("{0}")]
     UnexpectedError(#[from] anyhow::Error),
 }
 
@@ -51,24 +52,50 @@ name = "Adding a new user",
 skip(payload, pool)
 )]
 pub async fn handle_signup(
+    request: HttpRequest,
     payload: web::Json<SignUpData>,
     pool: web::Data<PgPool>,
-) -> Result<HttpResponse, SignUpError> {
-    // Salt is generated from initialization
-    let new_user = AppUser::try_from(payload.0)
-        .map_err(SignUpError::ValidationError)?;
+) -> HttpResponse {
+    let credentials = match basic_authentication(&request.headers()) {
+        Ok(c) => c,
+        Err(e) => {
+            println!("Failure from basic auth. {}", e.to_string());
+            return HttpResponse::BadRequest().finish()
+        }
+    };
+    let email = payload.0.email;
+    let combined_payload = UserSignUp {
+        email,
+        username: credentials.username,
+        pw: credentials.pw.expose_secret().to_string(),
+    };
+    match sign_up_user(combined_payload, &pool).await {
+        Ok(_) => HttpResponse::Ok().finish(),
+        Err(_) => {
+            println!("Failure from sign_up_user.");
+            HttpResponse::BadRequest().finish()
+        }
+    }
+}
+
+pub async fn sign_up_user(
+    user_sign_up: UserSignUp,
+    pool: &PgPool,
+) -> Result<(), anyhow::Error> {
+    // Salt and hashing are generated within try_from
+    let new_user = AppUser::try_from(user_sign_up)?;
     let mut transaction = pool
         .begin()
         .await
         .context("Failed to acquire a Postgres connection from the pool")?;
-    let subscriber_id = store_new_user(&mut transaction, &new_user)
+    store_new_user(&mut transaction, &new_user)
         .await
         .context("Failed to insert new user into the database.")?;
     transaction
         .commit()
         .await
         .context("Failed to commit SQL transaction to store a new subscriber.")?;
-    Ok(HttpResponse::Ok().finish())
+    Ok(())
 }
 
 async fn store_new_user(
@@ -95,6 +122,9 @@ async fn store_new_user(
         .await?;
     let rows_hit = execute_result.rows_affected().to_string();
     println!("Rows hit: {}", rows_hit);
+    println!("Db user ID stored: {}", uuid);
+    println!("Db phash stored: {}", phash.to_string());
+    println!("Db salt stored: {}", salt.to_string());
     Ok(uuid)
 }
 

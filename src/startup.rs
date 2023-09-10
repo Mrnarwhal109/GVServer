@@ -2,22 +2,16 @@ use crate::configuration::{DatabaseSettings, Settings};
 use crate::routes::{health_check, handle_login, handle_signup,
                     handle_add_pinpoint, handle_delete_all_pinpoints, handle_get_all_pinpoints,
                     };
-use actix_session::storage::RedisSessionStore;
-use actix_session::SessionMiddleware;
-use actix_web::cookie::Key;
 use actix_web::dev::Server;
 use actix_web::web::Data;
 use actix_web::{web, App, HttpServer};
-use actix_web_flash_messages::storage::CookieMessageStore;
-use actix_web_flash_messages::FlashMessagesFramework;
-use actix_web_lab::middleware::from_fn;
-use secrecy::{ExposeSecret, Secret};
+use secrecy::{Secret};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use std::net::TcpListener;
 use tracing_actix_web::TracingLogger;
 use crate::authentication::AuthService;
-use crate::authentication::middleware::{implant_token};
+// use crate::authentication::middleware::{implant_token};
 
 pub struct Application {
     port: u16,
