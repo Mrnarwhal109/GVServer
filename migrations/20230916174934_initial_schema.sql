@@ -40,3 +40,22 @@ INSERT INTO roles(id, title) VALUES(2, 'BASIC');
 INSERT INTO roles(id, title) VALUES(3, 'ELEVATED');
 INSERT INTO roles(id, title) VALUES(4, 'ADMIN');
 INSERT INTO roles(id, title) VALUES(5, 'VIBE_GOD');
+
+CREATE TABLE user_pinpoints(
+    user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	pinpoint_id uuid NOT NULL REFERENCES pinpoints(id) ON DELETE CASCADE,
+	PRIMARY KEY (user_id, pinpoint_id)
+);
+
+-- Add migration script here
+CREATE TABLE pinpoint_contents(
+	pinpoint_id uuid NOT NULL REFERENCES pinpoints(id) ON DELETE CASCADE,
+	content_id uuid NOT NULL REFERENCES contents(id) ON DELETE CASCADE,
+	PRIMARY KEY (pinpoint_id, content_id)
+);
+
+CREATE TABLE user_roles(
+	user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	role_id int NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+	PRIMARY KEY (user_id, role_id)
+);

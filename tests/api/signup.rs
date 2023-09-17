@@ -1,5 +1,5 @@
 use crate::helpers::{spawn_app};
-use gvserver::database_direct_models::DbUser;
+use gvserver::database_models::DbUser;
 use gvserver::routes::signup::post::{SignUpData, UserSignUp};
 use crate::TestApp;
 

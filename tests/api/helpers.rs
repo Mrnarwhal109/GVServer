@@ -1,10 +1,12 @@
 use once_cell::sync::Lazy;
+use serde_json::json;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use gvserver::authentication::{AuthService};
 use gvserver::configuration::{get_configuration, DatabaseSettings};
-use gvserver::database_direct_models::DbUser;
-use gvserver::routes::signup::post::SignUpData;
+use gvserver::database_models::db_user::DbUser;
+use gvserver::domain::pinpoint::GetPinpointRequest;
+use gvserver::domain::PostPinpointRequest;
 use gvserver::startup::{get_connection_pool, Application};
 use gvserver::telemetry::{get_subscriber, init_subscriber};
 
@@ -35,12 +37,27 @@ impl TestApp {
         self.auth_service.create_jwt(username).await
     }
 
-    pub async fn get_pinpoints(&self, jwt: String) -> reqwest::Response
+    pub async fn get_pinpoints(&self, jwt: String, body: GetPinpointRequest) -> reqwest::Response
     {
+        let json_body = json!(body).to_string();
         self.api_client
             .get(&format!("{}/pinpoints", &self.address))
             .header("Content-Type", "application/json")
             .header("Authorization", jwt)
+            .body(json_body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
+    pub async fn post_pinpoints(&self, jwt: String, body: PostPinpointRequest) -> reqwest::Response
+    {
+        let json_body = serde_json::json!(body).to_string();
+        self.api_client
+            .post(&format!("{}/pinpoints", &self.address))
+            .header("Content-Type", "application/json")
+            .header("Authorization", jwt)
+            .body(json_body)
             .send()
             .await
             .expect("Failed to execute request.")

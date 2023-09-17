@@ -5,7 +5,7 @@ use futures::future::{Ready};
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation, encode, Header, EncodingKey};
 use crate::authentication::auth_permissions::AuthPermissions;
 use crate::authentication::auth_token::Claims;
-use crate::authentication::{AuthParameters, AuthPermissionsMode};
+use crate::authentication::{AuthParameters, AuthPermissionsMode, validate_credentials};
 
 pub struct AuthService {
     jwt_key: Secret<String>
@@ -38,7 +38,7 @@ impl AuthService {
         token
     }
 
-    pub fn authorize_request(&self, auth_params: AuthParameters) -> Result<AuthPermissions, String> {
+    pub fn validate_request(&self, auth_params: &AuthParameters) -> Result<AuthPermissions, String> {
         let key = self.jwt_key.expose_secret().as_bytes();
         let jwt_info = &auth_params.jwt.clone();
         println!("Attempting to authorize JWT {} using key {}", jwt_info, self.jwt_key.expose_secret());
@@ -50,12 +50,24 @@ impl AuthService {
             Ok(_token) => {
                 println!("JWT decoded, values are {} and {}.",
                          _token.claims.sub, _token.claims.exp);
-                Ok(AuthPermissions::new(AuthPermissionsMode::None))
+                Ok(AuthPermissions::new(AuthPermissionsMode::None, _token.claims.sub))
             },
             Err(e) => {
                 println!("JWT parsing failure; token not decoded properly! Error given: {}", e.to_string());
                 Err(String::from("JWT parsing failure"))
             },
         }
+    }
+
+    pub fn validate_request_for_user(
+        &self, auth_params: &AuthParameters, username: String
+    ) -> Result<AuthPermissions, String> {
+        let initial_validation = self.validate_request(auth_params)?;
+        if initial_validation.username == username {
+            println!("Validation of jwt against user succeeded.");
+            return Ok(initial_validation);
+        }
+        println!("Validation of jwt against user failed.");
+        Err(String::from("Unauthorized action for user."))
     }
 }

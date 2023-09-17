@@ -3,8 +3,8 @@ use std::fmt::{Display, Formatter};
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub enum AuthPermissionsMode {
     None,
-    WriteForUniqueUser,
-    WriteForAll,
+    Restrict,
+    Allow,
     MAX
 }
 
@@ -16,11 +16,15 @@ impl Display for AuthPermissionsMode {
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct AuthPermissions {
-    pub mode: AuthPermissionsMode
+    pub mode: AuthPermissionsMode,
+    pub username: String,
 }
 
 impl AuthPermissions {
-    pub fn new(mode: AuthPermissionsMode) -> Self {
-        Self { mode }
+    pub fn new(
+        mode: AuthPermissionsMode,
+        username: String
+    ) -> Self {
+        Self { mode, username }
     }
 }

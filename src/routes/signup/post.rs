@@ -107,10 +107,11 @@ async fn store_new_user(
     let phash = user.phash.expose_secret().to_string();
     let salt = user.salt.to_string();
     let execute_result = sqlx::query!(
-            "WITH main AS \
-            (INSERT INTO users (id, email, username, phash, salt) \
-            VALUES ($1, $2, $3, $4, $5) RETURNING id) \
-            INSERT INTO user_roles SELECT id, $6 FROM main; ",
+            r#"WITH usr AS
+            (INSERT INTO users (id, email, username, phash, salt)
+            VALUES ($1, $2, $3, $4, $5) RETURNING id)
+            INSERT INTO user_roles (user_id, role_id)
+            SELECT id, $6 FROM usr; "#,
             user.unique_id,
             email,
             user.username,

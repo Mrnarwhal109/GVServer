@@ -37,8 +37,8 @@ pub async fn login_allows_genuine_user() {
     let json_return =
         response.json::<AuthParameters>().await.expect("Failure to get JWT");
 
-    let auth_permissions = app.auth_service.authorize_request(
-        json_return).expect("JWT Parse");
+    let auth_permissions = app.auth_service.validate_request(
+        &json_return).expect("JWT Parse");
 
     let msg: String = auth_permissions.mode.to_string();
     println!("AuthPermissions found: {}", msg);

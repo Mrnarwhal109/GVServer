@@ -1,5 +1,4 @@
 use uuid::Uuid;
-use crate::authentication::{rand_salt_string};
 
 pub struct DbUser {
     pub unique_id: Uuid,

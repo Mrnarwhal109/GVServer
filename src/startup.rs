@@ -1,6 +1,6 @@
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::routes::{health_check, handle_login, handle_signup,
-                    handle_add_pinpoint, handle_delete_all_pinpoints, handle_get_all_pinpoints,
+                    handle_add_pinpoint, handle_delete_all_pinpoints, handle_get_pinpoints,
                     };
 use actix_web::dev::Server;
 use actix_web::web::Data;
@@ -27,6 +27,7 @@ impl Application {
             "{}:{}",
             configuration.application.host, configuration.application.port
         );
+        println!("Server running at address {}", address.clone());
         let listener = TcpListener::bind(address)?;
         let port = listener.local_addr().unwrap().port();
         let server = run(
@@ -78,7 +79,7 @@ async fn run(
             //.wrap(from_fn(implant_token))
             .route("/", web::get().to(health_check))
             .route("/health_check", web::get().to(health_check))
-            .route("/pinpoints", web::get().to(handle_get_all_pinpoints))
+            .route("/pinpoints", web::get().to(handle_get_pinpoints))
             .route("/pinpoints", web::post().to(handle_add_pinpoint))
             .route("/pinpoints", web::delete().to(handle_delete_all_pinpoints))
             .route("/login", web::post().to(handle_login))

@@ -4,5 +4,5 @@ pub mod user_email;
 mod errors;
 
 pub use pinpoint::Pinpoint;
-pub use pinpoint::PinpointData;
+pub use pinpoint::PostPinpointRequest;
 pub use pinpoint::TempUsername;
