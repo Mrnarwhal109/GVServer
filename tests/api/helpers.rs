@@ -2,11 +2,13 @@ use once_cell::sync::Lazy;
 use serde_json::json;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
-use gvserver::authentication::{AuthService};
+use gvserver::authentication::{AuthParameters, AuthService};
 use gvserver::configuration::{get_configuration, DatabaseSettings};
 use gvserver::database_models::db_user::DbUser;
 use gvserver::domain::pinpoint::GetPinpointRequest;
 use gvserver::domain::PostPinpointRequest;
+use gvserver::routes::login::post::LoginData;
+use gvserver::routes::signup::post::UserSignUp;
 use gvserver::startup::{get_connection_pool, Application};
 use gvserver::telemetry::{get_subscriber, init_subscriber};
 
@@ -52,7 +54,7 @@ impl TestApp {
 
     pub async fn post_pinpoints(&self, jwt: String, body: PostPinpointRequest) -> reqwest::Response
     {
-        let json_body = serde_json::json!(body).to_string();
+        let json_body = json!(body).to_string();
         self.api_client
             .post(&format!("{}/pinpoints", &self.address))
             .header("Content-Type", "application/json")
@@ -96,6 +98,36 @@ impl TestApp {
         INNER JOIN roles R on UR.role_id = R.id \
         WHERE U.username = $1; ", username).fetch_one(&self.db_pool).await?;
         Ok(user_rows)
+    }
+
+    pub async fn sign_up_test_user(&self, username: &str, pw: &str, email: &str) {
+        let sign_up_data = UserSignUp {
+            email: String::from(email),
+            username: String::from(username),
+            pw: String::from(pw)
+        };
+        let json_data = serde_json::to_string(&sign_up_data)
+            .expect("Failed to serialize struct.");
+        let response = self.post_signup(
+            json_data, sign_up_data.username, sign_up_data.pw).await;
+        assert_eq!(response.status(), 200);
+    }
+
+    pub async fn login_test(&self, username: &str, pw: &str) -> String {
+        let login_data = LoginData {
+            username: String::from(username),
+            pw: String::from(pw)
+        };
+        serde_json::to_string(&login_data)
+            .expect("Failed to serialize struct.");
+        let response = self.post_login(
+            login_data.username, login_data.pw).await;
+        let code = response.status().as_u16();
+        let json_return = response.json::<AuthParameters>().await
+            .expect("Failed to get a JSON response back.");
+        let jwt = json_return.jwt.clone();
+        assert_eq!(code, 200);
+        jwt
     }
 }
 

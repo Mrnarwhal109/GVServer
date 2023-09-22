@@ -1,4 +1,4 @@
-use std::vec;
+use std::fmt::{Display, Formatter};
 use chrono::{DateTime, Utc};
 use chrono::serde::ts_seconds;
 use uuid::Uuid;
@@ -71,6 +71,7 @@ impl TryFrom<&Pinpoint> for GetPinpointResponse {
         let added_at = Utc::now();
         Ok(Self { latitude, longitude, added_at,
             description, attachment,
+            pinpoint_id: Some(value.pinpoint_id.clone()),
             pinpoint_user_id: value.user_id,
             pinpoint_username: Some(value.username.clone()) })
     }
@@ -138,9 +139,36 @@ impl PostPinpointRequest {
 pub struct GetPinpointRequest {
     pub latitude: Option<f64>,
     pub longitude: Option<f64>,
-    pub radius: Option<f64>,
+    pub proximity: Option<f64>,
     pub pinpoint_id: Option<Uuid>,
     pub username: Option<String>
+}
+
+impl Display for GetPinpointRequest {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let lat = match &self.latitude {
+            None => String::from("NONE"),
+            Some(x) => x.to_string()
+        };
+        let lng = match &self.longitude {
+            None => String::from("NONE"),
+            Some(x) => x.to_string()
+        };
+        let prox = match &self.proximity {
+            None => String::from("NONE"),
+            Some(x) => x.to_string()
+        };
+        let ppid = match &self.pinpoint_id {
+            None => String::from("NONE"),
+            Some(x) => x.to_string()
+        };
+        let usrn = match &self.username {
+            None => String::from("NONE"),
+            Some(x) => x.to_string()
+        };
+        write!(f, "lat is {}, lng is {}, prox is {}, pinpoint_id is {}, usrn is {}",
+            lat, lng, prox, ppid, usrn)
+    }
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -151,6 +179,7 @@ pub struct GetPinpointResponse {
     #[serde(with = "ts_seconds")]
     pub added_at: DateTime<Utc>,
     pub attachment: Vec<u8>,
+    pub pinpoint_id: Option<Uuid>,
     pub pinpoint_user_id: Option<Uuid>,
     pub pinpoint_username: Option<String>
 }
@@ -162,6 +191,7 @@ impl GetPinpointResponse {
         description: String,
         added_at: DateTime<Utc>,
         attachment: Vec<u8>,
+        pinpoint_id: Option<Uuid>,
         pinpoint_user_id: Option<Uuid>,
         pinpoint_username: Option<String>
     ) -> Self {
@@ -171,6 +201,7 @@ impl GetPinpointResponse {
             description,
             added_at,
             attachment,
+            pinpoint_id,
             pinpoint_user_id,
             pinpoint_username
         }
@@ -180,7 +211,7 @@ impl GetPinpointResponse {
         let cloned = Self::new(
             self.latitude, self.longitude, self.description.clone(),
             self.added_at.clone(), self.attachment.clone(),
-            None, None);
+            None, None, None);
         cloned
     }
 }
@@ -190,7 +221,14 @@ impl Clone for GetPinpointResponse {
         let cloned = Self::new(
             self.latitude, self.longitude, self.description.clone(),
             self.added_at.clone(), self.attachment.clone(),
-            self.pinpoint_user_id.clone(), self.pinpoint_username.clone());
+            self.pinpoint_id.clone(), self.pinpoint_user_id.clone(),
+            self.pinpoint_username.clone());
         cloned
     }
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct DeletePinpointRequest {
+    pub pinpoint_id: Option<Uuid>,
+    pub username: Option<String>
 }

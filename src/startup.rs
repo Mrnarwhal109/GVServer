@@ -1,7 +1,6 @@
 use crate::configuration::{DatabaseSettings, Settings};
-use crate::routes::{health_check, handle_login, handle_signup,
-                    handle_add_pinpoint, handle_delete_all_pinpoints, handle_get_pinpoints,
-                    };
+use crate::routes::{health_check, handle_login, handle_signup, handle_add_pinpoint,
+                    handle_get_pinpoints, handle_delete_pinpoints};
 use actix_web::dev::Server;
 use actix_web::web::Data;
 use actix_web::{web, App, HttpServer};
@@ -81,7 +80,7 @@ async fn run(
             .route("/health_check", web::get().to(health_check))
             .route("/pinpoints", web::get().to(handle_get_pinpoints))
             .route("/pinpoints", web::post().to(handle_add_pinpoint))
-            .route("/pinpoints", web::delete().to(handle_delete_all_pinpoints))
+            .route("/pinpoints", web::delete().to(handle_delete_pinpoints))
             .route("/login", web::post().to(handle_login))
             .route("/signup", web::post().to(handle_signup))
             .app_data(db_pool.clone())

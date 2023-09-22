@@ -1,97 +1,135 @@
-use chrono::Utc;
 use uuid::Uuid;
 use actix_web::{HttpResponse, web};
-use actix_web::http::header::ContentType;
-use sqlx::PgPool;
-use crate::domain::Pinpoint;
-use crate::domain::TempUsername;
-use serde_json;
+use sqlx::{PgPool, Postgres, Transaction};
+use crate::authentication::{AuthParameters, AuthService};
+use crate::domain::pinpoint::DeletePinpointRequest;
 
-#[tracing::instrument(
-name = "HTTP route : Delete all pinpoints",
-skip(pool)
-)]
-pub async fn handle_delete_all_pinpoints(
+pub async fn handle_delete_pinpoints(
+    args: web::Json<DeletePinpointRequest>,
+    // Retrieving a connection from the application state!
     pool: web::Data<PgPool>,
+    auth: web::Data<AuthService>,
+    auth_params: AuthParameters
 ) -> HttpResponse {
-    match delete_all_db_pinpoints(&pool).await {
-        Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::InternalServerError().finish()
+    let username = args.0.username.unwrap_or(String::from(""));
+    if username.is_empty() {
+        return HttpResponse::BadRequest().finish();
     }
-}
 
-#[tracing::instrument(
-name = "HTTP route : Delete all of a user's pinpoints",
-skip(pool, body)
-)]
-pub async fn handle_delete_all_user_pinpoints(
-    pool: web::Data<PgPool>,
-    body: web::Json<TempUsername>,
-) -> HttpResponse {
-
-    let username: String = match body.0.try_into() {
-        Ok(body) => body,
-        Err(_) => return HttpResponse::BadRequest().finish(),
+    match auth.validate_request_for_user(
+        &auth_params, username.clone()) {
+        Ok(x) => x,
+        Err(_) => {
+            return HttpResponse::Unauthorized().finish();
+        }
     };
 
-    match delete_all_user_db_pinpoints(&pool, &username).await {
-        Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::InternalServerError().finish()
+    let mut tran = match pool.begin().await {
+        Ok(x) => x,
+        Err(_) => return HttpResponse::InternalServerError().finish()
+    };
+
+    match args.0.pinpoint_id {
+        None => {
+            match delete_user_db_pinpoints(&mut tran, &username).await {
+                Ok(_) =>
+                    {
+                        match tran.commit().await {
+                            Ok(_) => {
+                                HttpResponse::Ok().finish()
+                            }
+                            Err(_) => {
+                                HttpResponse::InternalServerError().finish()
+                            }
+                        }
+                    },
+                Err(_) => HttpResponse::InternalServerError().finish()
+            }
+        }
+        Some(x) => {
+            let response = match delete_db_pinpoint(&mut tran, x).await {
+                Ok(_) =>
+                    {
+                        match tran.commit().await {
+                            Ok(_) => {
+                                HttpResponse::Ok().finish()
+                            }
+                            Err(_) => {
+                                HttpResponse::InternalServerError().finish()
+                            }
+                        }
+                    },
+                Err(_) => HttpResponse::InternalServerError().finish()
+            };
+            response
+        }
     }
 }
 
-#[tracing::instrument(
-name = "Deleting all pinpoints in the database",
-skip(pool)
-)]
-pub async fn delete_all_db_pinpoints(
-    pool: &PgPool,
+pub async fn delete_db_pinpoint(
+    tran: &mut Transaction<'_, Postgres>,
+    pinpoint_id: Uuid,
 ) -> Result<(), sqlx::Error> {
-    todo!()
-    /*
     sqlx::query!(
         r#"
-        DELETE FROM pinpoints;
+        DELETE FROM pinpoint_contents
+        WHERE pinpoint_id = $1;
         "#
+        , pinpoint_id
     )
-        .execute(pool)
+        .execute(&mut *tran)
         .await
         .map_err(|e| {
             tracing::error!("Failed to execute query: {:?}", e);
             e
             // Using the '?' operator to return early
             // if the function failed, returning a sqlx::Error
-            // We will talk about error handling in depth later!
         })?;
 
-    Ok(())
-    */
-}
-
-#[tracing::instrument(
-name = "Deleting all pinpoints in the database",
-skip(pool)
-)]
-pub async fn delete_all_user_db_pinpoints(
-    pool: &PgPool,
-    username: &String
-) -> Result<(), sqlx::Error> {
-    todo!();
-    /*
     sqlx::query!(
         r#"
-        DELETE FROM pinpoints WHERE username = $1;
-        "#,
-        username
+        DELETE FROM pinpoints
+        WHERE id = $1;
+        "#
+        , pinpoint_id
     )
-        .execute(pool)
+        .execute(&mut *tran)
         .await
         .map_err(|e| {
             tracing::error!("Failed to execute query: {:?}", e);
             e
+            // Using the '?' operator to return early
+            // if the function failed, returning a sqlx::Error
         })?;
 
     Ok(())
+}
 
-     */
+pub async fn delete_user_db_pinpoints(
+    tran: &mut Transaction<'_, Postgres>,
+    username: &String
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        WITH usr_pin(pinpoint_id) AS
+        (
+            SELECT pinpoint_id
+            FROM user_pinpoints
+            WHERE user_id IN (SELECT id FROM users WHERE username = $1)
+        )
+        DELETE FROM pinpoints
+        WHERE id IN (SELECT pinpoint_id FROM usr_pin);
+        "#
+        , username
+    )
+        .execute(tran)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to execute query: {:?}", e);
+            e
+            // Using the '?' operator to return early
+            // if the function failed, returning a sqlx::Error
+        })?;
+
+    Ok(())
 }

@@ -15,9 +15,9 @@ async fn get_all_pinpoints_allowed_with_custom_credentials() {
     let jwt = app.create_jwt("TESTUSER").await;
 
     let request_body = GetPinpointRequest {
-        latitude: None,
-        longitude: None,
-        radius: None,
+        latitude: Some(5.0),
+        longitude: Some(5.0),
+        proximity: Some(555.0),
         pinpoint_id: None,
         username: None
     };
@@ -47,7 +47,7 @@ async fn get_all_pinpoints_fails_with_invalid_jwts() {
     let request_body = GetPinpointRequest {
         latitude: None,
         longitude: None,
-        radius: None,
+        proximity: None,
         pinpoint_id: None,
         username: None
     };
@@ -60,88 +60,34 @@ async fn get_all_pinpoints_fails_with_invalid_jwts() {
 #[tokio::test]
 pub async fn get_all_pinpoints_allowed_with_new_user_jwt() {
     let app = spawn_app().await;
-    let username = String::from("MentallyAbsurd");
-    let sign_up_data = UserSignUp {
-        email: String::from("mentallyabsurd@gmail.com"),
-        username: username.clone(),
-        pw: String::from("$uper$ecurePa$$word!")
-    };
-
-    let json_data = serde_json::to_string(&sign_up_data)
-        .expect("Failed to serialize struct.");
-
-    let response = app.post_signup(json_data, sign_up_data.username, sign_up_data.pw).await;
-    assert_eq!(response.status(), 200);
-
-    let login_data = LoginData {
-        username,
-        pw: String::from("$uper$ecurePa$$word!")
-    };
-
-   serde_json::to_string(&login_data)
-        .expect("Failed to serialize struct.");
-
-    let response = app.post_login(
-        login_data.username, login_data.pw).await;
-
-    let code = response.status().as_u16();
-
-    let json_return = response.json::<AuthParameters>().await
-        .expect("Failed to get a JSON response back.");
-
-    println!("JWT response received: {}", json_return.jwt);
-
-    assert_eq!(code, 200);
+    let username = "MentallyAbsurd";
+    let pw = "$uper$ecurePa$$word!";
+    let email = "mentallyabsurd@gmail.com";
+    app.sign_up_test_user(username, pw, email).await;
+    let jwt = app.login_test(username, pw).await;
 
     let request_body = GetPinpointRequest {
         latitude: None,
         longitude: None,
-        radius: None,
+        proximity: None,
         pinpoint_id: None,
         username: None
     };
 
-    let response = app.get_pinpoints(json_return.jwt, request_body).await;
+    let response = app.get_pinpoints(jwt, request_body).await;
     assert_eq!(response.status(), 200);
 }
 
 #[tokio::test]
 pub async fn get_all_pinpoints_not_allowed_with_new_user_faulty_jwt() {
     let app = spawn_app().await;
-    let username = String::from("MentallyAbsurd");
-    let sign_up_data = UserSignUp {
-        email: String::from("mentallyabsurd@gmail.com"),
-        username: username.clone(),
-        pw: String::from("$uper$ecurePa$$word!")
-    };
+    let username = "MentallyAbsurd";
+    let pw = "$uper$ecurePa$$word!";
+    let email = "mentallyabsurd@gmail.com";
+    app.sign_up_test_user(username, pw, email).await;
+    let jwt = app.login_test(username, pw).await;
 
-    let json_data = serde_json::to_string(&sign_up_data)
-        .expect("Failed to serialize struct.");
-
-    let response = app.post_signup(json_data, sign_up_data.username, sign_up_data.pw).await;
-    assert_eq!(response.status(), 200);
-
-    let login_data = LoginData {
-        username,
-        pw: String::from("$uper$ecurePa$$word!")
-    };
-
-    serde_json::to_string(&login_data)
-        .expect("Failed to serialize struct.");
-
-    let response = app.post_login(
-        login_data.username, login_data.pw).await;
-
-    let code = response.status().as_u16();
-
-    let json_return = response.json::<AuthParameters>().await
-        .expect("Failed to get a JSON response back.");
-
-    println!("JWT response received: {}", json_return.jwt);
-
-    assert_eq!(code, 200);
-
-    let mut evil_jwt = json_return.jwt.clone();
+    let mut evil_jwt = jwt.clone();
     evil_jwt.pop();
     evil_jwt.pop();
     evil_jwt.pop();
@@ -154,18 +100,18 @@ pub async fn get_all_pinpoints_not_allowed_with_new_user_faulty_jwt() {
     let request_body = GetPinpointRequest {
         latitude: None,
         longitude: None,
-        radius: None,
+        proximity: None,
         pinpoint_id: None,
         username: None
     };
 
-    let response = app.get_pinpoints(json_return.jwt, request_body).await;
+    let response = app.get_pinpoints(jwt, request_body).await;
     assert_eq!(response.status(), 200);
 
     let request_body = GetPinpointRequest {
         latitude: None,
         longitude: None,
-        radius: None,
+        proximity: None,
         pinpoint_id: None,
         username: None
     };
@@ -177,45 +123,18 @@ pub async fn get_all_pinpoints_not_allowed_with_new_user_faulty_jwt() {
 #[tokio::test]
 async fn post_get_pinpoint_allowed_with_generated_user() {
     let app = spawn_app().await;
-    let username = String::from("MentallyAbsurd");
-    let sign_up_data = UserSignUp {
-        email: String::from("mentallyabsurd@gmail.com"),
-        username: username.clone(),
-        pw: String::from("$uper$ecurePa$$word!")
-    };
-
-    let json_data = serde_json::to_string(&sign_up_data)
-        .expect("Failed to serialize struct.");
-
-    let response = app.post_signup(json_data, sign_up_data.username, sign_up_data.pw).await;
-    assert_eq!(response.status(), 200);
-
-    let login_data = LoginData {
-        username: username.clone(),
-        pw: String::from("$uper$ecurePa$$word!")
-    };
-
-    serde_json::to_string(&login_data)
-        .expect("Failed to serialize struct.");
-
-    let response = app.post_login(
-        login_data.username, login_data.pw).await;
-
-    let code = response.status().as_u16();
-
-    let json_return = response.json::<AuthParameters>().await
-        .expect("Failed to get a JSON response back.");
-
-    let jwt = json_return.jwt.clone();
-
-    assert_eq!(code, 200);
+    let username = "MentallyAbsurd";
+    let pw = "$uper$ecurePa$$word";
+    let email = "mentallyabsurd@gmail.com";
+    app.sign_up_test_user(username, pw, email).await;
+    let jwt = app.login_test(username, pw).await;
 
     let pinpoint_request_body = PostPinpointRequest::new(
         123.0,
         123.0,
         String::from("Description: This pinpoint was added from unit testing."),
         None,
-        username.clone()
+       String::from(username)
     );
 
     let response = app.post_pinpoints(jwt.clone(), pinpoint_request_body).await;
@@ -227,9 +146,9 @@ async fn post_get_pinpoint_allowed_with_generated_user() {
     let request_body = GetPinpointRequest {
         latitude: None,
         longitude: None,
-        radius: None,
+        proximity: None,
         pinpoint_id: None,
-        username: Some(username)
+        username: Some(String::from(username))
     };
 
     let response = app.get_pinpoints(jwt.clone(), request_body).await;
