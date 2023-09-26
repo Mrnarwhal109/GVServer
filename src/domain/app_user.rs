@@ -33,3 +33,8 @@ impl TryFrom<UserSignUp> for AppUser {
             role_id: -1, role_title: String::from("UNKNOWN") })
     }
 }
+
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct DeleteUserRequest {
+    pub username: String
+}

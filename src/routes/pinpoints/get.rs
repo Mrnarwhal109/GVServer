@@ -21,7 +21,7 @@ pub async fn handle_get_pinpoints(
     println!("GetPinpointRequest to handler: {}", args.0);
     let permissions: AuthPermissions;
     match auth.validate_request(&auth_params) {
-        Ok(p) => permissions = p,
+        Ok(x) => permissions = x,
         Err(_) => return HttpResponse::Unauthorized().finish()
     };
     return get_pinpoints(pool, args, permissions).await;

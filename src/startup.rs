@@ -10,6 +10,7 @@ use sqlx::PgPool;
 use std::net::TcpListener;
 use tracing_actix_web::TracingLogger;
 use crate::authentication::AuthService;
+use crate::routes::users::handle_delete_user;
 // use crate::authentication::middleware::{implant_token};
 
 pub struct Application {
@@ -81,6 +82,7 @@ async fn run(
             .route("/pinpoints", web::get().to(handle_get_pinpoints))
             .route("/pinpoints", web::post().to(handle_add_pinpoint))
             .route("/pinpoints", web::delete().to(handle_delete_pinpoints))
+            .route("/users", web::delete().to(handle_delete_user))
             .route("/login", web::post().to(handle_login))
             .route("/signup", web::post().to(handle_signup))
             .app_data(db_pool.clone())
@@ -95,3 +97,4 @@ async fn run(
 
 #[derive(Clone)]
 pub struct HmacSecret(pub Secret<String>);
+
