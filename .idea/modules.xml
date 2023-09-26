@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/gv_server.iml" filepath="$PROJECT_DIR$/gv_server.iml" />
+      <module fileurl="file://$PROJECT_DIR$/gvserver.iml" filepath="$PROJECT_DIR$/gvserver.iml" />
     </modules>
   </component>
 </project>

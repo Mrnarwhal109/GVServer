@@ -25,7 +25,7 @@ COPY . .
 ENV SQLX_OFFLINE true
 # Let's build our binary!
 # We'll use the release profile to make it faaaaaaaaaaast
-RUN cargo build --release --bin gv_server
+RUN cargo build --release --bin gvserver
 
 # Runtime stage
 #FROM rust:1.67.1-slim AS runtime
@@ -42,11 +42,11 @@ RUN apt-get update -y \
 
 # Copy the compiled binary from the builder environment
 # to our runtime environment
-COPY --from=builder /app/target/release/gv_server gv_server
+COPY --from=builder /app/target/release/gvserver gvserver
 # We need the configuration file at runtime!
 COPY configuration configuration
 ENV APP_ENVIRONMENT production
 # ENV RUST_BACKTRACE 1
 
 # When 'docker run' is executed, launch the binary!
-ENTRYPOINT ["./gv_server"]
+ENTRYPOINT ["./gvserver"]
