@@ -1,63 +1,46 @@
-use actix_web::{ HttpResponse, web, ResponseError };
-use actix_web::http::header::LOCATION;
-use secrecy::Secret;
+use crate::authentication::{AuthService, basic_authentication};
+use crate::authentication::{validate_credentials};
+use actix_web::{HttpRequest, web};
+use actix_web::HttpResponse;
+use reqwest::StatusCode;
 use sqlx::PgPool;
-use crate::authentication::{AuthError, Credentials, validate_credentials};
-use crate::routes::error_chain_fmt;
-use actix_web::http::StatusCode;
 
-#[derive(serde::Deserialize)]
-pub struct FormData {
-    username: String,
-    password: Secret<String>,
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct LoginData {
+    pub username: String,
+    pub pw: String,
 }
 
 #[tracing::instrument(
-skip(form, pool),
+name = "handle_login",
+skip(pool, auth),
 fields(username=tracing::field::Empty, user_id=tracing::field::Empty)
 )]
-pub async fn login(
-    form: web::Form<FormData>,
-    pool: web::Data<PgPool>
-) -> Result<HttpResponse, LoginError> {
-    let credentials = Credentials {
-        username: form.0.username,
-        password: form.0.password,
+// We are now injecting `PgPool` to retrieve stored credentials from the database
+pub async fn handle_login(
+    request: HttpRequest,
+    pool: web::Data<PgPool>,
+    auth: web::Data<AuthService>,
+) -> Result<HttpResponse, actix_web::Error> {
+    let credentials = match basic_authentication(&request.headers()) {
+        Ok(c) => c,
+        Err(_) => return Ok(HttpResponse::BadRequest().finish())
     };
-    tracing::Span::current()
-        .record("username", &tracing::field::display(&credentials.username));
-    let user_id = validate_credentials(credentials, &pool)
-        .await
-        .map_err(|e| match e {
-            AuthError::InvalidCredentials(_) => LoginError::AuthError(e.into()),
-            AuthError::UnexpectedError(_) => LoginError::UnexpectedError(e.into()),
-        })?;
-    tracing::Span::current().record("user_id", &tracing::field::display(&user_id));
-    Ok(HttpResponse::SeeOther()
-        .insert_header((LOCATION, "/"))
-           .finish())
-}
 
-#[derive(thiserror::Error)]
-pub enum LoginError {
-    #[error("Authentication failed")]
-    AuthError(#[source] anyhow::Error),
-    #[error("Something went wrong")]
-    UnexpectedError(#[from] anyhow::Error),
-}
+    tracing::Span::current().record(
+        "username", &tracing::field::display(credentials.clone().username.to_string()));
 
-impl std::fmt::Debug for LoginError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        error_chain_fmt(self, f)
+    match validate_credentials(credentials.clone(), &pool).await {
+        Ok(_) => {
+            let auth_jwt = auth.create_jwt(
+                credentials.clone().username.to_string().as_str()).await;
+            let auth_json = serde_json::json!({
+                "jwt": auth_jwt
+                });
+            let good_response = HttpResponse::build(StatusCode::OK)
+                .json(auth_json);
+            Ok(good_response)
+        },
+        Err(_) => Ok(HttpResponse::BadRequest().finish())
     }
 }
-
-impl ResponseError for LoginError {
-    fn status_code(&self) -> StatusCode {
-        match self {
-            LoginError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            LoginError::AuthError(_) => StatusCode::UNAUTHORIZED,
-        }
-    }
-}
-

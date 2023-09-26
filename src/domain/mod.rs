@@ -1,9 +1,8 @@
-mod subscriber_name;
-mod subscriber_email;
-mod new_subscriber;
-mod new_pinpoint;
+pub mod pinpoint;
+pub mod app_user;
+pub mod user_email;
+mod errors;
 
-pub use subscriber_name::SubscriberName;
-pub use new_subscriber::NewSubscriber;
-pub use subscriber_email::SubscriberEmail;
-pub use new_pinpoint::Pinpoint;
+pub use pinpoint::Pinpoint;
+pub use pinpoint::PostPinpointRequest;
+pub use pinpoint::TempUsername;

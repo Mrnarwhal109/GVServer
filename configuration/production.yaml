@@ -1,7 +1,8 @@
 application:
   host: 0.0.0.0
-  base_url: "https://gvserver-2zih4.ondigitalocean.app"
+  jwt_secret: "0QIYe5gPBBrfFvROJ0xTiu2uJTCfv9bISeWzVc2FHNyqNS43Qbajzxslxhxrps3QYP9ZKk5zOPpsYyC40j3OSe5kMQnFI86Yt2CNRpayDOi7fFNeLUjX00vFWH2w7zRA4a7d4JP9tFZGGxKOiHMGg8pcC49Iaw4aBhqmxqhP78KEV7W0pdbJHTRPHswLoiL6KMx8L2ZxBLJt6OAmbqW2VKB1shh2HV00Ix3vsO2KFeDViuCN5Y1Fe3Ek1ajVahW3"
 database:
   require_ssl: true
 email_client:
   base_url: "http://api.postmarkapp.com"
+  sender_email: "ncknobbe@shockers.wichita.edu"
