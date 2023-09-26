@@ -108,7 +108,7 @@ impl TryFrom<TempUsername> for String {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct PostPinpointRequest {
     latitude: f64,
     longitude: f64,
@@ -132,6 +132,21 @@ impl PostPinpointRequest {
             attachment,
             username
         }
+    }
+}
+
+impl Display for PostPinpointRequest {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let lat = &self.latitude;
+        let lng = &self.latitude;
+        let desc = &self.description;
+        let attachment = match &self.attachment {
+            None => String::from("NONE"),
+            Some(x) => String::from("SOMETHING")
+        };
+        let  usrn = &self.username;
+        write!(f, "PostPinpointRequest(lat is {}, lng is {}, desc is {}, attachment is {}, usrn is {}).",
+               lat, lng, desc, attachment, usrn)
     }
 }
 
@@ -166,7 +181,7 @@ impl Display for GetPinpointRequest {
             None => String::from("NONE"),
             Some(x) => x.to_string()
         };
-        write!(f, "lat is {}, lng is {}, prox is {}, pinpoint_id is {}, usrn is {}",
+        write!(f, "GetPinpointRequest(lat is {}, lng is {}, prox is {}, pinpoint_id is {}, usrn is {}).",
             lat, lng, prox, ppid, usrn)
     }
 }
@@ -227,7 +242,7 @@ impl Clone for GetPinpointResponse {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct DeletePinpointRequest {
     pub pinpoint_id: Option<Uuid>,
     pub username: Option<String>

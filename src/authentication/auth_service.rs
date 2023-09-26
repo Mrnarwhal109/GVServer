@@ -41,19 +41,15 @@ impl AuthService {
     pub fn validate_request(&self, auth_params: &AuthParameters) -> Result<AuthPermissions, String> {
         let key = self.jwt_key.expose_secret().as_bytes();
         let jwt_info = &auth_params.jwt.clone();
-        println!("Attempting to authorize JWT {} using key {}", jwt_info, self.jwt_key.expose_secret());
         match decode::<Claims>(
             &auth_params.jwt,
             &DecodingKey::from_secret(key),
             &Validation::new(Algorithm::HS256),
         ) {
             Ok(_token) => {
-                println!("JWT decoded, values are {} and {}.",
-                         _token.claims.sub, _token.claims.exp);
                 Ok(AuthPermissions::new(AuthPermissionsMode::None, _token.claims.sub))
             },
             Err(e) => {
-                println!("JWT parsing failure; token not decoded properly! Error given: {}", e.to_string());
                 Err(String::from("JWT parsing failure"))
             },
         }

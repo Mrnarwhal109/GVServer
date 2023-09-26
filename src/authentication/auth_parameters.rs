@@ -19,7 +19,6 @@ impl FromRequest for AuthParameters {
             Some(_) => {
                 let _split: Vec<&str> = _auth.unwrap().to_str().unwrap().split("Bearer").collect();
                 let token = _split[0].trim();
-                println!("JWT provided to route handler: {}", token);
                 ready(Ok(AuthParameters { jwt: token.to_string() }))
             },
             None => ready(Ok(AuthParameters { jwt: String::from("") }))

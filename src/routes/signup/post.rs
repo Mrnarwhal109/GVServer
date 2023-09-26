@@ -5,7 +5,7 @@ use sqlx::{PgPool, Postgres, Transaction};
 use std::convert::{TryFrom};
 use secrecy::{ExposeSecret, Secret};
 use uuid::Uuid;
-use crate::authentication::basic_authentication;
+use crate::authentication::{AuthService, basic_authentication, validate_credentials};
 use crate::domain::app_user::AppUser;
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -48,13 +48,14 @@ impl ResponseError for SignUpError {
 }
 
 #[tracing::instrument(
-name = "Adding a new user",
-skip(payload, pool)
+name = "handle_signup",
+skip(payload, pool, auth)
 )]
 pub async fn handle_signup(
     request: HttpRequest,
     payload: web::Json<SignUpData>,
     pool: web::Data<PgPool>,
+    auth: web::Data<AuthService>,
 ) -> HttpResponse {
     let credentials = match basic_authentication(&request.headers()) {
         Ok(c) => c,
@@ -66,15 +67,29 @@ pub async fn handle_signup(
     let email = payload.0.email;
     let combined_payload = UserSignUp {
         email,
-        username: credentials.username,
+        username: credentials.username.clone(),
         pw: credentials.pw.expose_secret().to_string(),
     };
     match sign_up_user(combined_payload, &pool).await {
-        Ok(_) => HttpResponse::Ok().finish(),
+        Ok(_) => {},
         Err(_) => {
             println!("Failure from sign_up_user.");
-            HttpResponse::BadRequest().finish()
+            return HttpResponse::BadRequest().finish()
         }
+    }
+
+    match validate_credentials(credentials.clone(), &pool).await {
+        Ok(_) => {
+            let auth_jwt = auth.create_jwt(
+                credentials.clone().username.to_string().as_str()).await;
+            let auth_json = serde_json::json!({
+                "jwt": auth_jwt
+                });
+            let good_response = HttpResponse::build(StatusCode::OK)
+                .json(auth_json);
+            good_response
+        },
+        Err(_) => HttpResponse::BadRequest().finish()
     }
 }
 

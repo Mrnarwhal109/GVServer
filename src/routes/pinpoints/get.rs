@@ -7,6 +7,11 @@ use crate::database_models::DbPinpoint;
 use crate::domain::{Pinpoint};
 use crate::domain::pinpoint::{GetPinpointRequest, GetPinpointResponse};
 
+
+#[tracing::instrument(
+name = "handle_get_pinpoints",
+skip(pool, auth, args, auth_params),
+)]
 pub async fn handle_get_pinpoints(
     pool: web::Data<PgPool>,
     auth: web::Data<AuthService>,
@@ -14,7 +19,6 @@ pub async fn handle_get_pinpoints(
     auth_params: AuthParameters,
 ) -> HttpResponse {
     println!("GetPinpointRequest to handler: {}", args.0);
-    println!("Auth params to handler: {}", auth_params.jwt);
     let permissions: AuthPermissions;
     match auth.validate_request(&auth_params) {
         Ok(p) => permissions = p,
@@ -119,8 +123,8 @@ pub async fn get_db_pinpoints(
         let desc = r.description.clone();
         let usr = r.username.clone();
 
-        println!("Pinpoint converted from DB: latitude {}, longitude {}, \
-        description {}, username {}", lat, log, desc, usr);
+        // println!("Pinpoint converted from DB: latitude {}, longitude {}, \
+        // description {}, username {}", lat, log, desc, usr);
     }
     Ok(results)
 }

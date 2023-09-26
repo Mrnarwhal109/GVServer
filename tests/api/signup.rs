@@ -19,8 +19,6 @@ async fn sign_up_persists_users() {
 
     assert_eq!(response.status(), 200);
 
-    println!("Checkpoint 1");
-
     let get_user_attempt = app.select_one_user(username.clone()).await;
 
     match get_user_attempt {
@@ -35,9 +33,7 @@ async fn sign_up_persists_users() {
         }
     }
 
-    println!("Checkpoint 1");
     sign_up_rejects_a_duplicate_user(&app).await;
-
 }
 
 async fn sign_up_rejects_a_duplicate_user(running_app: &TestApp) {

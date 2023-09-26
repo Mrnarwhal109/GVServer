@@ -4,6 +4,10 @@ use sqlx::{PgPool, Postgres, Transaction};
 use crate::authentication::{AuthParameters, AuthService};
 use crate::domain::pinpoint::DeletePinpointRequest;
 
+#[tracing::instrument(
+name = "handle_delete_pinpoint",
+skip(pool, auth, auth_params),
+)]
 pub async fn handle_delete_pinpoints(
     args: web::Json<DeletePinpointRequest>,
     // Retrieving a connection from the application state!

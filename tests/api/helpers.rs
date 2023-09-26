@@ -78,14 +78,15 @@ impl TestApp {
 
     pub async fn post_signup(&self, json_data: String, username: String, pw: String) -> reqwest::Response
     {
-        self.api_client
+        let response = self.api_client
             .post(&format!("{}/signup", &self.address))
             .basic_auth(username, Some(pw))
             .header("Content-Type", "application/json")
             .body(json_data)
             .send()
             .await
-            .expect("Failed to execute request.")
+            .expect("Failed to execute request.");
+        response
     }
 
     pub async fn select_one_user(&self, username: String) -> Result<DbUser, anyhow::Error> {
@@ -100,7 +101,8 @@ impl TestApp {
         Ok(user_rows)
     }
 
-    pub async fn sign_up_test_user(&self, username: &str, pw: &str, email: &str) {
+    pub async fn sign_up_test_user(&self, username: &str, pw: &str, email: &str)
+    -> String {
         let sign_up_data = UserSignUp {
             email: String::from(email),
             username: String::from(username),
@@ -110,7 +112,12 @@ impl TestApp {
             .expect("Failed to serialize struct.");
         let response = self.post_signup(
             json_data, sign_up_data.username, sign_up_data.pw).await;
-        assert_eq!(response.status(), 200);
+        let code = response.status().as_u16();
+        let json_return = response.json::<AuthParameters>().await
+            .expect("Failed to get a JSON response back.");
+        let jwt = json_return.jwt.clone();
+        assert_eq!(code, 200);
+        jwt
     }
 
     pub async fn login_test(&self, username: &str, pw: &str) -> String {

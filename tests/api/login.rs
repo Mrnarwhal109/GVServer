@@ -19,8 +19,6 @@ pub async fn login_allows_genuine_user() {
     let response = app.post_signup(json_data, sign_up_data.username, sign_up_data.pw).await;
     assert_eq!(response.status(), 200);
 
-    println!("Checkpoint 1");
-
     let login_data = LoginData {
         username,
         pw: String::from("$uper$ecurePa$$word!")
@@ -39,9 +37,6 @@ pub async fn login_allows_genuine_user() {
 
     let auth_permissions = app.auth_service.validate_request(
         &json_return).expect("JWT Parse");
-
-    let msg: String = auth_permissions.mode.to_string();
-    println!("AuthPermissions found: {}", msg);
 
     assert_eq!(code, 200);
 }

@@ -4,6 +4,10 @@ use crate::domain::Pinpoint;
 use crate::domain::PostPinpointRequest;
 use crate::authentication::{AuthParameters, AuthService};
 
+#[tracing::instrument(
+name = "handle_add_pinpoint",
+skip(pool, auth, auth_params),
+)]
 pub async fn handle_add_pinpoint(
     pinpoint: web::Json<PostPinpointRequest>,
     // Retrieving a connection from the application state!
@@ -33,10 +37,6 @@ pub async fn handle_add_pinpoint(
     }
 }
 
-#[tracing::instrument(
-name = "Saving new pinpoint details in the database",
-skip(new_pinpoint, pool)
-)]
 pub async fn insert_pinpoint(
     pool: &PgPool,
     new_pinpoint: &Pinpoint,

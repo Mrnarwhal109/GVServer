@@ -91,9 +91,6 @@ pub async fn validate_credentials(
         user_id = Some(stored_user_id);
         expected_password_hash = stored_password_hash;
         expected_salt = SaltString::new(&stored_salt).map_err(|_| anyhow!("Salt invalid"))?;
-        println!("Db user ID retrieved: {}", stored_user_id);
-        println!("Db phash retrieved: {}", expected_password_hash.expose_secret().to_string());
-        println!("Db salt retrieved: {}", expected_salt.to_string());
     }
     let t = spawn_blocking_with_tracing(move || {
         verify_password_hash(expected_password_hash, credentials.pw,
@@ -102,10 +99,8 @@ pub async fn validate_credentials(
 
     match t {
         Ok(_) => {
-            println!("spawn_blocking_with_tracing(...) succeeded.")
         }
         Err(_) => {
-            println!("spawn_blocking_with_tracing(...) did not succeed.");
             return Err(AuthError::UnexpectedError(String::from("spawn_blocking")));
         }
     };
@@ -192,7 +187,6 @@ pub fn basic_authentication(headers: &HeaderMap) -> Result<Credentials, anyhow::
         })?
         .to_string();
 
-    println!("Basic auth decoded as username {} pw {}", username.clone(), password.clone());
     Ok(Credentials {
         username,
         pw: Secret::new(password),

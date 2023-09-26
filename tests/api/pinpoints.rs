@@ -1,11 +1,6 @@
-use chrono::Utc;
-use uuid::Uuid;
 use validator::HasLen;
-use gvserver::authentication::AuthParameters;
-use gvserver::domain::{Pinpoint, PostPinpointRequest};
+use gvserver::domain::{PostPinpointRequest};
 use gvserver::domain::pinpoint::{GetPinpointRequest, GetPinpointResponse};
-use gvserver::routes::login::post::LoginData;
-use gvserver::routes::signup::post::UserSignUp;
 use crate::helpers::{spawn_app};
 
 #[tokio::test]
@@ -30,7 +25,6 @@ async fn get_all_pinpoints_allowed_with_custom_credentials() {
         .expect("Failed to get a JSON response back.");
 
     println!("Vector returned: {}", json_return.length());
-
 
     // Assert
     assert_eq!(status.as_u16(), 200);
@@ -63,8 +57,7 @@ pub async fn get_all_pinpoints_allowed_with_new_user_jwt() {
     let username = "MentallyAbsurd";
     let pw = "$uper$ecurePa$$word!";
     let email = "mentallyabsurd@gmail.com";
-    app.sign_up_test_user(username, pw, email).await;
-    let jwt = app.login_test(username, pw).await;
+    let jwt = app.sign_up_test_user(username, pw, email).await;
 
     let request_body = GetPinpointRequest {
         latitude: None,
@@ -84,8 +77,7 @@ pub async fn get_all_pinpoints_not_allowed_with_new_user_faulty_jwt() {
     let username = "MentallyAbsurd";
     let pw = "$uper$ecurePa$$word!";
     let email = "mentallyabsurd@gmail.com";
-    app.sign_up_test_user(username, pw, email).await;
-    let jwt = app.login_test(username, pw).await;
+    let jwt = app.sign_up_test_user(username, pw, email).await;
 
     let mut evil_jwt = jwt.clone();
     evil_jwt.pop();
@@ -126,8 +118,7 @@ async fn post_get_pinpoint_allowed_with_generated_user() {
     let username = "MentallyAbsurd";
     let pw = "$uper$ecurePa$$word";
     let email = "mentallyabsurd@gmail.com";
-    app.sign_up_test_user(username, pw, email).await;
-    let jwt = app.login_test(username, pw).await;
+    let jwt = app.sign_up_test_user(username, pw, email).await;
 
     let pinpoint_request_body = PostPinpointRequest::new(
         123.0,

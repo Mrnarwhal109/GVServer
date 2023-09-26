@@ -12,6 +12,7 @@ pub struct LoginData {
 }
 
 #[tracing::instrument(
+name = "handle_login",
 skip(pool, auth),
 fields(username=tracing::field::Empty, user_id=tracing::field::Empty)
 )]
@@ -36,7 +37,6 @@ pub async fn handle_login(
             let auth_json = serde_json::json!({
                 "jwt": auth_jwt
                 });
-            println!("Sending JSON auth response body: {}", auth_json.to_string());
             let good_response = HttpResponse::build(StatusCode::OK)
                 .json(auth_json);
             Ok(good_response)
