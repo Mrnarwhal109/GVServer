@@ -20,29 +20,34 @@ pub async fn handle_get_pinpoints(
     args: web::Query<GetPinpointRequest>,
     auth_params: AuthParameters,
 ) -> HttpResponse {
-    let username = path.into_inner();
+    let user_requesting = path.into_inner();
     println!("GetPinpointRequest to handler: {}", args.0);
     let permissions: AuthPermissions;
-    match auth.validate_request(&auth_params) {
+    match auth.validate_request_for_user(
+        &auth_params, user_requesting.clone()) {
         Ok(x) => permissions = x,
-        Err(_) => return HttpResponse::Unauthorized().finish()
+        Err(_) => {
+            return HttpResponse::Unauthorized().finish();
+        }
     };
-    return get_pinpoints(pool, Some(username), args, permissions).await;
+    if permissions.username != user_requesting {
+        return HttpResponse::Unauthorized().finish();
+    }
+    get_pinpoints(pool, Some(user_requesting), args).await
 }
 
 pub async fn get_pinpoints(
     pool: web::Data<PgPool>,
-    username: Option<String>,
+    user_requesting: Option<String>,
     args: web::Query<GetPinpointRequest>,
-    permissions: AuthPermissions,
 ) -> HttpResponse {
-    let found_username: Option<String> = username.clone();
+    let user_filter: Option<String> = args.0.username;
     let latitude = args.0.latitude.unwrap_or(0.0);
     let longitude = args.0.longitude.unwrap_or(0.0);
-    let proximity = args.0.proximity.unwrap_or(0.5);
+    let proximity = args.0.proximity.unwrap_or(9999.0);
 
     let pinpoints = match get_db_pinpoints(
-        &pool, found_username, latitude, longitude, proximity).await {
+        &pool, user_filter, latitude, longitude, proximity).await {
         Ok(x) => x,
         Err(_) => {
             return HttpResponse::InternalServerError().finish();
@@ -56,7 +61,9 @@ pub async fn get_pinpoints(
     };
 
     let filtered_pinpoints: Vec<GetPinpointResponse>
-        = censor_pinpoints_by_username(&response_pinpoints, permissions.username.as_str());
+        = censor_pinpoints_by_username(
+        &response_pinpoints,
+        user_requesting.unwrap_or(String::from("")).as_str());
 
     let vec_len = filtered_pinpoints.len();
     println!("Sending {} pinpoints back from handler", vec_len);
@@ -72,7 +79,7 @@ pub async fn get_pinpoints(
 // if a username is present
 pub async fn get_db_pinpoints(
     pool: &PgPool,
-    username: Option<String>,
+    user_filter: Option<String>,
     latitude: f64,
     longitude: f64,
     proximity: f64,
@@ -103,8 +110,8 @@ pub async fn get_db_pinpoints(
         .expect("Failed to perform a query to retrieve pinpoints.");
     let mut results: Vec<Pinpoint> = Vec::new();
 
-    if username.is_some() {
-        let user_inner = username.unwrap();
+    if user_filter.is_some() {
+        let user_inner = user_filter.unwrap();
         for row in rows.iter() {
             let pinpoint = Pinpoint::try_from(row)
                 .map_err(|_| anyhow!("Conversion failure"))?;

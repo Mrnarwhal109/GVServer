@@ -77,7 +77,7 @@ impl TestApp {
     pub async fn post_signup(&self, json_data: String, username: String, pw: String) -> reqwest::Response
     {
         let response = self.api_client
-            .post(&format!("{}/signup", &self.address))
+            .post(&format!("{}/users", &self.address))
             .basic_auth(username, Some(pw))
             .header("Content-Type", "application/json")
             .body(json_data)
