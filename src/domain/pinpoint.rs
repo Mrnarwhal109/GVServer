@@ -142,9 +142,9 @@ impl Display for PostPinpointRequest {
         let desc = &self.description;
         let attachment = match &self.attachment {
             None => String::from("NONE"),
-            Some(x) => String::from("SOMETHING")
+            Some(_) => String::from("SOMETHING")
         };
-        let  usrn = &self.username;
+        let usrn = &self.username;
         write!(f, "PostPinpointRequest(lat is {}, lng is {}, desc is {}, attachment is {}, usrn is {}).",
                lat, lng, desc, attachment, usrn)
     }

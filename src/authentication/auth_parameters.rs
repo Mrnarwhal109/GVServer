@@ -17,6 +17,8 @@ impl FromRequest for AuthParameters {
         let _auth = req.headers().get("Authorization");
         match _auth {
             Some(_) => {
+                let test = _auth.unwrap().to_str().unwrap();
+                println!("Auth unwrapped: {}", test);
                 let _split: Vec<&str> = _auth.unwrap().to_str().unwrap().split("Bearer").collect();
                 let token = _split[0].trim();
                 ready(Ok(AuthParameters { jwt: token.to_string() }))

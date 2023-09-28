@@ -79,7 +79,7 @@ async fn run(
             //.wrap(from_fn(implant_token))
             .route("/", web::get().to(health_check))
             .route("/health_check", web::get().to(health_check))
-            .route("/pinpoints", web::get().to(handle_get_pinpoints))
+            .service(handle_get_pinpoints)
             .route("/pinpoints", web::post().to(handle_add_pinpoint))
             .route("/pinpoints", web::delete().to(handle_delete_pinpoints))
             .route("/users", web::delete().to(handle_delete_user))

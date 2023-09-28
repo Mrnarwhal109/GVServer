@@ -39,14 +39,12 @@ impl TestApp {
         self.auth_service.create_jwt(username).await
     }
 
-    pub async fn get_pinpoints(&self, jwt: String, body: GetPinpointRequest) -> reqwest::Response
-    {
-        let json_body = json!(body).to_string();
+    pub async fn get_pinpoints(&self, jwt: String, username: String, query: GetPinpointRequest)
+        -> reqwest::Response {
         self.api_client
-            .get(&format!("{}/pinpoints", &self.address))
-            .header("Content-Type", "application/json")
+            .get(&format!("{}/pinpoints/{}", &self.address, username))
             .header("Authorization", jwt)
-            .body(json_body)
+            .query(&query)
             .send()
             .await
             .expect("Failed to execute request.")

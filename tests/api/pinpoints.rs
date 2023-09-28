@@ -17,7 +17,7 @@ async fn get_all_pinpoints_allowed_with_custom_credentials() {
         username: None
     };
 
-    let response = app.get_pinpoints(jwt, request_body).await;
+    let response = app.get_pinpoints(jwt, String::from("TESTUSER"), request_body).await;
 
     let status = &response.status();
 
@@ -46,7 +46,7 @@ async fn get_all_pinpoints_fails_with_invalid_jwts() {
         username: None
     };
 
-    let response = app.get_pinpoints(jwt, request_body).await;
+    let response = app.get_pinpoints(jwt, String::from("TESTUSER"), request_body).await;
 
     assert_eq!(response.status(), 401);
 }
@@ -67,7 +67,7 @@ pub async fn get_all_pinpoints_allowed_with_new_user_jwt() {
         username: None
     };
 
-    let response = app.get_pinpoints(jwt, request_body).await;
+    let response = app.get_pinpoints(jwt, username.to_string(), request_body).await;
     assert_eq!(response.status(), 200);
 }
 
@@ -97,7 +97,7 @@ pub async fn get_all_pinpoints_not_allowed_with_new_user_faulty_jwt() {
         username: None
     };
 
-    let response = app.get_pinpoints(jwt, request_body).await;
+    let response = app.get_pinpoints(jwt, username.to_string(), request_body).await;
     assert_eq!(response.status(), 200);
 
     let request_body = GetPinpointRequest {
@@ -108,7 +108,7 @@ pub async fn get_all_pinpoints_not_allowed_with_new_user_faulty_jwt() {
         username: None
     };
 
-    let response = app.get_pinpoints(evil_jwt, request_body).await;
+    let response = app.get_pinpoints(evil_jwt, username.to_string(), request_body).await;
     assert_eq!(response.status(), 401);
 }
 
@@ -142,7 +142,7 @@ async fn post_get_pinpoint_allowed_with_generated_user() {
         username: Some(String::from(username))
     };
 
-    let response = app.get_pinpoints(jwt.clone(), request_body).await;
+    let response = app.get_pinpoints(jwt.clone(), username.to_string(), request_body).await;
     assert_eq!(response.status(), 200);
 
     let json_return = response.json::<Vec<GetPinpointResponse>>().await

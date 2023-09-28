@@ -1,4 +1,4 @@
-use actix_web::{HttpResponse, web};
+use actix_web::{get, HttpResponse, web};
 use actix_web::http::header::ContentType;
 use anyhow::{anyhow};
 use sqlx::{PgPool};
@@ -12,27 +12,31 @@ use crate::domain::pinpoint::{GetPinpointRequest, GetPinpointResponse};
 name = "handle_get_pinpoints",
 skip(pool, auth, args, auth_params),
 )]
+#[get("/pinpoints/{username}")]
 pub async fn handle_get_pinpoints(
     pool: web::Data<PgPool>,
     auth: web::Data<AuthService>,
-    args: web::Json<GetPinpointRequest>,
+    path: web::Path<String>,
+    args: web::Query<GetPinpointRequest>,
     auth_params: AuthParameters,
 ) -> HttpResponse {
+    let username = path.into_inner();
     println!("GetPinpointRequest to handler: {}", args.0);
     let permissions: AuthPermissions;
     match auth.validate_request(&auth_params) {
         Ok(x) => permissions = x,
         Err(_) => return HttpResponse::Unauthorized().finish()
     };
-    return get_pinpoints(pool, args, permissions).await;
+    return get_pinpoints(pool, Some(username), args, permissions).await;
 }
 
 pub async fn get_pinpoints(
     pool: web::Data<PgPool>,
-    args: web::Json<GetPinpointRequest>,
+    username: Option<String>,
+    args: web::Query<GetPinpointRequest>,
     permissions: AuthPermissions,
 ) -> HttpResponse {
-    let found_username: Option<String> = args.0.username.clone();
+    let found_username: Option<String> = username.clone();
     let latitude = args.0.latitude.unwrap_or(0.0);
     let longitude = args.0.longitude.unwrap_or(0.0);
     let proximity = args.0.proximity.unwrap_or(0.5);
@@ -123,8 +127,8 @@ pub async fn get_db_pinpoints(
         let desc = r.description.clone();
         let usr = r.username.clone();
 
-        // println!("Pinpoint converted from DB: latitude {}, longitude {}, \
-        // description {}, username {}", lat, log, desc, usr);
+        println!("Pinpoint converted from DB: latitude {}, longitude {}, \
+        description {}, username {}", lat, log, desc, usr);
     }
     Ok(results)
 }
