@@ -8,7 +8,7 @@ use gvserver::database_models::db_user::DbUser;
 use gvserver::domain::pinpoint::GetPinpointRequest;
 use gvserver::domain::PostPinpointRequest;
 use gvserver::routes::login::post::LoginData;
-use gvserver::routes::signup::post::UserSignUp;
+use gvserver::routes::users::post::UserSignUp;
 use gvserver::startup::{get_connection_pool, Application};
 use gvserver::telemetry::{get_subscriber, init_subscriber};
 

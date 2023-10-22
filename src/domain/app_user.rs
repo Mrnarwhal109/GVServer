@@ -3,7 +3,7 @@ use secrecy::Secret;
 use uuid::Uuid;
 use crate::authentication::{compute_password_hash, rand_salt_string};
 use crate::domain::user_email::UserEmail;
-use crate::routes::signup::post::{UserSignUp, SignUpError};
+use crate::routes::users::post::{UserSignUp, SignUpError};
 
 pub struct AppUser {
     pub unique_id: Uuid,

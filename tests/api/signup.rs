@@ -1,6 +1,6 @@
 use crate::helpers::{spawn_app};
 use gvserver::database_models::DbUser;
-use gvserver::routes::signup::post::{SignUpData, UserSignUp};
+use gvserver::routes::users::post::{SignUpData, UserSignUp};
 use crate::TestApp;
 
 #[tokio::test()]

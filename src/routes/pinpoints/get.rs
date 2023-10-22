@@ -1,4 +1,4 @@
-use actix_web::{get, HttpResponse, web};
+use actix_web::{get, HttpMessage, HttpRequest, HttpResponse, web};
 use actix_web::http::header::ContentType;
 use anyhow::{anyhow};
 use sqlx::{PgPool};
@@ -10,27 +10,21 @@ use crate::domain::pinpoint::{GetPinpointRequest, GetPinpointResponse};
 
 #[tracing::instrument(
 name = "handle_get_pinpoints",
-skip(pool, auth, args, auth_params),
+skip(pool, path, args),
 )]
-#[get("/pinpoints/{username}")]
+#[get("/{username}")]
 pub async fn handle_get_pinpoints(
+    req: HttpRequest,
     pool: web::Data<PgPool>,
-    auth: web::Data<AuthService>,
     path: web::Path<String>,
     args: web::Query<GetPinpointRequest>,
-    auth_params: AuthParameters,
 ) -> HttpResponse {
+    let req_ext = req.extensions_mut();
+    let auth_permissions: &AuthPermissions = req_ext.get::<AuthPermissions>().unwrap();
+    println!("AuthPermissions found as {:?}", auth_permissions);
     let user_requesting = path.into_inner();
     println!("GetPinpointRequest to handler: {}", args.0);
-    let permissions: AuthPermissions;
-    match auth.validate_request_for_user(
-        &auth_params, user_requesting.clone()) {
-        Ok(x) => permissions = x,
-        Err(_) => {
-            return HttpResponse::Unauthorized().finish();
-        }
-    };
-    if permissions.username != user_requesting {
+    if auth_permissions.username != user_requesting {
         return HttpResponse::Unauthorized().finish();
     }
     get_pinpoints(pool, Some(user_requesting), args).await

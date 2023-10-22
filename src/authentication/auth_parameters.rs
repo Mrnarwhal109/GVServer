@@ -7,13 +7,8 @@ pub struct AuthParameters {
 }
 
 impl AuthParameters {
-}
-
-impl FromRequest for AuthParameters {
-    type Error = Error;
-    type Future = Ready<Result<AuthParameters, Self::Error>>;
-
-    fn from_request(req: &HttpRequest, _payload: &mut dev::Payload) -> Self::Future {
+    pub fn attempt_from_request(req: &HttpRequest, _payload: &mut dev::Payload)
+                            -> AuthParameters {
         let _auth = req.headers().get("Authorization");
         match _auth {
             Some(_) => {
@@ -21,9 +16,18 @@ impl FromRequest for AuthParameters {
                 println!("Auth unwrapped: {}", test);
                 let _split: Vec<&str> = _auth.unwrap().to_str().unwrap().split("Bearer").collect();
                 let token = _split[0].trim();
-                ready(Ok(AuthParameters { jwt: token.to_string() }))
+                AuthParameters { jwt: token.to_string() }
             },
-            None => ready(Ok(AuthParameters { jwt: String::from("") }))
+            None => AuthParameters { jwt: String::from("") }
         }
+    }
+}
+
+impl FromRequest for AuthParameters {
+    type Error = Error;
+    type Future = Ready<Result<AuthParameters, Self::Error>>;
+
+    fn from_request(req: &HttpRequest, _payload: &mut dev::Payload) -> Self::Future {
+        ready(Ok(AuthParameters::attempt_from_request(req, _payload)))
     }
 }

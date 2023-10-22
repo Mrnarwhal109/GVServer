@@ -1,6 +1,9 @@
 use std::fmt::{Display, Formatter};
+use actix_web::{dev, Error, FromRequest, HttpRequest};
+use std::future::{ready, Ready};
+use crate::authentication::AuthParameters;
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub enum AuthPermissionsMode {
     None,
     Restrict,
@@ -10,11 +13,11 @@ pub enum AuthPermissionsMode {
 
 impl Display for AuthPermissionsMode {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", "test")
+        write!(f, "{}", "AuthPermissionsModeValue")
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct AuthPermissions {
     pub mode: AuthPermissionsMode,
     pub username: String,
