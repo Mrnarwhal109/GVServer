@@ -1,11 +1,11 @@
 use actix_web::http::{header, StatusCode};
-use actix_web::{web, HttpResponse, ResponseError, HttpRequest};
+use actix_web::{post, web, HttpResponse, ResponseError, HttpRequest};
 use anyhow::{Context};
 use sqlx::{PgPool, Postgres, Transaction};
 use std::convert::{TryFrom};
 use secrecy::{ExposeSecret, Secret};
 use uuid::Uuid;
-use crate::authentication::{AuthService, basic_authentication, validate_credentials};
+use crate::authentication::{AuthParameters, AuthPermissions, AuthService, basic_authentication, validate_credentials};
 use crate::domain::app_user::AppUser;
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -156,4 +156,18 @@ pub fn error_chain_fmt(
         current = cause.source();
     }
     Ok(())
+}
+
+#[tracing::instrument(
+name = "handle_modify_user",
+skip(pool, auth, auth_params),
+)]
+#[post("/{username}")]
+pub async fn handle_modify_user(
+    pool: web::Data<PgPool>,
+    auth: web::Data<AuthService>,
+    path: web::Path<String>,
+    auth_params: AuthParameters,
+) -> HttpResponse {
+   HttpResponse::Ok().finish()
 }

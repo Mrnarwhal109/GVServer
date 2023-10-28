@@ -8,9 +8,12 @@ use secrecy::{Secret};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use std::net::TcpListener;
+use actix_web_lab::middleware::from_fn;
 use tracing_actix_web::TracingLogger;
 use crate::authentication::AuthService;
-use crate::routes::users::handle_delete_user;
+use crate::authentication::middleware::get_jwt_permissions;
+use crate::routes::users::{handle_delete_user, handle_get_users};
+use crate::routes::users::post::handle_modify_user;
 // use crate::authentication::middleware::{implant_token};
 
 pub struct Application {
@@ -79,12 +82,22 @@ async fn run(
             //.wrap(from_fn(implant_token))
             .route("/", web::get().to(health_check))
             .route("/health_check", web::get().to(health_check))
-            .service(handle_get_pinpoints)
-            .route("/pinpoints", web::post().to(handle_add_pinpoint))
-            .route("/pinpoints", web::delete().to(handle_delete_pinpoints))
             .route("/login", web::post().to(handle_login))
-            .route("/users", web::delete().to(handle_delete_user))
             .route("/users", web::post().to(handle_signup))
+            .service(
+                web::scope("/pinpoints")
+                    .wrap(from_fn(get_jwt_permissions))
+                    .route("", web::post().to(handle_add_pinpoint))
+                    .route("", web::delete().to(handle_delete_pinpoints))
+                    .service(handle_get_pinpoints)
+            )
+            .service(
+                web::scope("/users")
+                    .wrap(from_fn(get_jwt_permissions))
+                    .route("", web::delete().to(handle_delete_user))
+                    .service(handle_get_users)
+                    .service(handle_modify_user)
+            )
             .app_data(db_pool.clone())
             .app_data(base_url.clone())
             //.app_data(Data::new(HmacSecret(hmac_secret.clone())))

@@ -1,7 +1,7 @@
 mod health_check;
 mod helpers;
 mod pinpoints;
-mod signup;
+mod users;
 mod login;
 
 pub use helpers::*;

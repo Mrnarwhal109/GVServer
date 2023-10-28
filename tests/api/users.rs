@@ -1,6 +1,8 @@
+use log::debug;
 use crate::helpers::{spawn_app};
 use gvserver::database_models::DbUser;
-use gvserver::routes::signup::post::{SignUpData, UserSignUp};
+use gvserver::routes::users::{GetUsersRequest, UserResponse};
+use gvserver::routes::users::post::{SignUpData, UserSignUp};
 use crate::TestApp;
 
 #[tokio::test()]
@@ -75,4 +77,47 @@ async fn sign_up_rejects_a_duplicate_user(running_app: &TestApp) {
             panic!();
         }
     }
+}
+
+#[tokio::test]
+pub async fn get_users_username_only() {
+    let app = spawn_app().await;
+    let username = "MentallyAbsurd";
+    let pw = "$uper$ecurePa$$word!";
+    let email = "mentallyabsurd@gmail.com";
+    let jwt = app.sign_up_test_user(username, pw, email).await;
+
+    let request_body = GetUsersRequest {
+        email: None,
+        username: Some(username.to_string()),
+        user_id: None,
+    };
+
+    let response = app.get_users(jwt, request_body).await;
+
+    let code = (&response.status()).clone();
+    let json = response.json::<UserResponse>().await.unwrap();
+    println!("Response json {:?}", json);
+    assert!(json.username.is_some());
+    assert_eq!(code, 200);
+}
+
+#[tokio::test]
+pub async fn get_users_nonexistent_but_ok() {
+    let app = spawn_app().await;
+    let username = "MentallyAbsurd";
+    let pw = "$uper$ecurePa$$word!";
+    let email = "mentallyabsurd@gmail.com";
+    let jwt = app.sign_up_test_user(username, pw, email).await;
+
+    let request_body = GetUsersRequest {
+        email: None,
+        username: Some(String::from("IProbablyDoNotExist")),
+        user_id: None,
+    };
+
+    let response = app.get_users(jwt, request_body).await;
+    let code = (&response.status()).clone();
+    assert_eq!(response.content_length().unwrap(), 0);
+    assert_eq!(code, 200);
 }
