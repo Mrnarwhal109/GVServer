@@ -1,19 +1,18 @@
-use actix_web::{HttpResponse, web};
+use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
 use sqlx::PgPool;
 use crate::domain::Pinpoint;
 use crate::domain::PostPinpointRequest;
-use crate::authentication::{AuthParameters, AuthService};
+use crate::authentication::{AuthParameters, AuthPermissions, AuthService};
 
 #[tracing::instrument(
 name = "handle_add_pinpoint",
-skip(pool, auth, auth_params),
+skip(pool),
 )]
 pub async fn handle_add_pinpoint(
+    req: HttpRequest,
     pinpoint: web::Json<PostPinpointRequest>,
     // Retrieving a connection from the application state!
     pool: web::Data<PgPool>,
-    auth: web::Data<AuthService>,
-    auth_params: AuthParameters
 ) -> HttpResponse {
     // 'web::Json' is a wrapper around 'PinpointRequest'
     // 'pinpoint.0' gives us access to the underlying 'PinpointRequest'
@@ -23,13 +22,12 @@ pub async fn handle_add_pinpoint(
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
 
-    match auth.validate_request_for_user(
-        &auth_params, new_pinpoint.username.clone()) {
-        Ok(x) => x,
-        Err(_) => {
-            return HttpResponse::Unauthorized().finish();
-        }
-    };
+    let req_ext = req.extensions_mut();
+    let auth_permissions: &AuthPermissions = req_ext.get::<AuthPermissions>().unwrap();
+    println!("AuthPermissions found as {:?}", auth_permissions);
+    if auth_permissions.username != new_pinpoint.username {
+        return HttpResponse::Unauthorized().finish();
+    }
 
     match insert_pinpoint(&pool, &new_pinpoint).await {
         Ok(_) => HttpResponse::Ok().finish(),

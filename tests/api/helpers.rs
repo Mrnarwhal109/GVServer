@@ -146,6 +146,14 @@ impl TestApp {
         assert_eq!(code, 200);
         jwt
     }
+
+    pub fn get_test_jpg_path() -> String {
+        String::from("/input_container/icantdoitsquidward.jpg")
+    }
+
+    pub async fn load_jpg_at(&self, path: &str) -> String {
+        String::from("NOT_IMPLEMENTED")
+    }
 }
 
 pub async fn spawn_app() -> TestApp {

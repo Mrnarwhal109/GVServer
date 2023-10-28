@@ -88,6 +88,38 @@ pub async fn post_pinpoint_allowed_with_new_user_jwt() {
 }
 
 #[tokio::test]
+pub async fn post_pinpoint_fails_with_invalid_jwt() {
+    let app = spawn_app().await;
+    let username = "MentallyAbsurd224";
+    let pw = "$uper$ecurePa$$word!224";
+    let email = "mentallyabsurd224@gmail.com";
+    let jwt = app.sign_up_test_user(username, pw, email).await;
+
+    let request_body = PostPinpointRequest::new(
+        5.0, 5.0, String::from(
+            "From unit testing"), None, username.to_string());
+
+    let response = app.post_pinpoints(String::from("BadJWTHereLOL"), request_body).await;
+    assert_eq!(response.status(), 401);
+}
+
+#[tokio::test]
+pub async fn post_pinpoint_with_attachment() {
+    let app = spawn_app().await;
+    let username = "MentallyAbsurd224";
+    let pw = "$uper$ecurePa$$word!224";
+    let email = "mentallyabsurd224@gmail.com";
+    let jwt = app.sign_up_test_user(username, pw, email).await;
+
+    let request_body = PostPinpointRequest::new(
+        5.0, 5.0, String::from(
+            "From unit testing"), None, username.to_string());
+
+    let response = app.post_pinpoints(jwt, request_body).await;
+    assert_eq!(response.status(), 200);
+}
+
+#[tokio::test]
 pub async fn get_all_pinpoints_not_allowed_with_new_user_faulty_jwt() {
     let app = spawn_app().await;
     let username = "MentallyAbsurd";
