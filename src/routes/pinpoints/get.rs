@@ -78,9 +78,9 @@ pub async fn get_db_pinpoints(
     longitude: f64,
     proximity: f64,
 ) -> Result<Vec<Pinpoint>, anyhow::Error> {
-    let lat_lower = latitude - proximity;
-    let lat_upper = latitude + proximity;
-    let long_lower = longitude - proximity;
+    let lat_lower = latitude.clone() - proximity.clone();
+    let lat_upper = latitude.clone() + proximity.clone();
+    let long_lower = longitude.clone() - proximity.clone();
     let long_upper = longitude + proximity;
 
     let rows = sqlx::query_as!(

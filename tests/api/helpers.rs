@@ -8,6 +8,7 @@ use gvserver::database_models::db_user::DbUser;
 use gvserver::domain::pinpoint::GetPinpointRequest;
 use gvserver::domain::PostPinpointRequest;
 use gvserver::routes::login::post::LoginData;
+use gvserver::routes::users::GetUsersRequest;
 use gvserver::routes::users::post::UserSignUp;
 use gvserver::startup::{get_connection_pool, Application};
 use gvserver::telemetry::{get_subscriber, init_subscriber};
@@ -37,6 +38,17 @@ pub struct TestApp {
 impl TestApp {
     pub async fn create_jwt(&self, username: &str) -> String {
         self.auth_service.create_jwt(username).await
+    }
+
+    pub async fn get_users(&self, jwt: String, query: GetUsersRequest)
+                               -> reqwest::Response {
+        self.api_client
+            .get(&format!("{}/users", &self.address))
+            .header("Authorization", jwt)
+            .query(&query)
+            .send()
+            .await
+            .expect("Failed to execute request.")
     }
 
     pub async fn get_pinpoints(&self, jwt: String, username: String, query: GetPinpointRequest)

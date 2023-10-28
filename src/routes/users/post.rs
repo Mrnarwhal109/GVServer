@@ -162,7 +162,7 @@ pub fn error_chain_fmt(
 name = "handle_modify_user",
 skip(pool, auth, auth_params),
 )]
-#[post("/users/{username}")]
+#[post("/{username}")]
 pub async fn handle_modify_user(
     pool: web::Data<PgPool>,
     auth: web::Data<AuthService>,

@@ -7,3 +7,4 @@ mod image_handling;
 pub use pinpoint::Pinpoint;
 pub use pinpoint::PostPinpointRequest;
 pub use pinpoint::TempUsername;
+pub use app_user::DbUser;
