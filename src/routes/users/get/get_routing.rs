@@ -1,10 +1,12 @@
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, web, get};
 use actix_web::http::header::ContentType;
-use anyhow::{anyhow, Error};
+use anyhow::{anyhow};
 use sqlx::PgPool;
 use uuid::Uuid;
 use crate::authentication::AuthPermissions;
-use crate::domain::app_user::DbUser;
+use crate::database_models::DbUser;
+use crate::routes::users::get::get_user_request::GetUsersRequest;
+use crate::routes::users::get::user_response::UserResponse;
 
 #[derive(Clone)]
 enum UserFilter {
@@ -12,22 +14,6 @@ enum UserFilter {
     ByUsername(String),
     ByEmail(String),
     ByUuid(Uuid)
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-pub struct GetUsersRequest {
-    pub email: Option<String>,
-    pub username: Option<String>,
-    pub user_id: Option<Uuid>
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-pub struct UserResponse {
-    pub unique_id: Option<Uuid>,
-    pub email: Option<String>,
-    pub username: Option<String>,
-    pub role_id: Option<i32>,
-    pub role_title: Option<String>
 }
 
 #[tracing::instrument(
@@ -85,7 +71,7 @@ pub async fn get_user(
         Err(_) => return HttpResponse::InternalServerError().finish()
     };
     if extra_rights {
-        // All the goods
+        // All the loot
         let user_resp = UserResponse {
             unique_id: Some(user_val.unique_id),
             username: Some(user_val.username),

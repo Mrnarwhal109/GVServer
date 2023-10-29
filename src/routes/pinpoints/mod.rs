@@ -1,7 +1,6 @@
-mod get;
-mod post;
-mod delete;
+pub mod delete;
+pub mod get;
+pub mod post;
 
-pub use get::handle_get_pinpoints;
-pub use post::handle_add_pinpoint;
-pub use delete::{handle_delete_pinpoints};
+pub use get::get_routing::handle_get_pinpoints;
+pub use post::post_routing::handle_add_pinpoint;

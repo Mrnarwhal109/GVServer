@@ -5,8 +5,8 @@ use sqlx::{PgPool};
 use crate::authentication::{AuthService, AuthParameters, AuthPermissions};
 use crate::database_models::DbPinpoint;
 use crate::domain::{Pinpoint};
-use crate::domain::pinpoint::{GetPinpointRequest, GetPinpointResponse};
-
+use crate::routes::pinpoints::get::get_pinpoint_request::GetPinpointRequest;
+use crate::routes::pinpoints::get::get_pinpoint_response::GetPinpointResponse;
 
 #[tracing::instrument(
 name = "handle_get_pinpoints",
@@ -128,8 +128,8 @@ pub async fn get_db_pinpoints(
         let desc = r.description.clone();
         let usr = r.username.clone();
 
-        println!("Pinpoint converted from DB: latitude {}, longitude {}, \
-        description {}, username {}", lat, log, desc, usr);
+        // println!("Pinpoint converted from DB: latitude {}, longitude {}, \
+        // description {}, username {}", lat, log, desc, usr);
     }
     Ok(results)
 }

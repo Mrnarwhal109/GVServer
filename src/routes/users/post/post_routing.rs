@@ -7,45 +7,8 @@ use secrecy::{ExposeSecret, Secret};
 use uuid::Uuid;
 use crate::authentication::{AuthParameters, AuthPermissions, AuthService, basic_authentication, validate_credentials};
 use crate::domain::app_user::AppUser;
-
-#[derive(serde::Serialize, serde::Deserialize)]
-pub struct SignUpData {
-    pub email: String,
-}
-
-#[derive(serde::Serialize, serde::Deserialize)]
-pub struct UserSignUp {
-    pub email: String,
-    pub username: String,
-    pub pw: String,
-}
-
-// Using .map_err(SignUpError::ChoiceType)?;
-// required the try_from function called before map_err
-// to choose the type Error of the type inside the enum choice,
-// a.k.a. String for ValidationError(String).
-#[derive(thiserror::Error)]
-pub enum SignUpError {
-    #[error("{0}")]
-    ValidationError(String),
-    #[error("{0}")]
-    UnexpectedError(#[from] anyhow::Error),
-}
-
-impl std::fmt::Debug for SignUpError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        error_chain_fmt(self, f)
-    }
-}
-
-impl ResponseError for SignUpError {
-    fn status_code(&self) -> StatusCode {
-        match self {
-            SignUpError::ValidationError(_) => StatusCode::BAD_REQUEST,
-            SignUpError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-        }
-    }
-}
+use crate::domain::user_sign_up::UserSignUp;
+use crate::routes::users::post::post_user_request::PostUserRequest;
 
 #[tracing::instrument(
 name = "handle_signup",
@@ -53,7 +16,7 @@ skip(payload, pool, auth)
 )]
 pub async fn handle_signup(
     request: HttpRequest,
-    payload: web::Json<SignUpData>,
+    payload: web::Json<PostUserRequest>,
     pool: web::Data<PgPool>,
     auth: web::Data<AuthService>,
 ) -> HttpResponse {
@@ -136,26 +99,14 @@ async fn store_new_user(
         )
         .execute(tran)
         .await?;
+    /*
     let rows_hit = execute_result.rows_affected().to_string();
     println!("Rows hit: {}", rows_hit);
     println!("Db user ID stored: {}", uuid);
     println!("Db phash stored: {}", phash.to_string());
     println!("Db salt stored: {}", salt.to_string());
+     */
     Ok(uuid)
-}
-
-
-pub fn error_chain_fmt(
-    e: &impl std::error::Error,
-    f: &mut std::fmt::Formatter<'_>,
-) -> std::fmt::Result {
-    writeln!(f, "{}\n", e)?;
-    let mut current = e.source();
-    while let Some(cause) = current {
-        writeln!(f, "Caused by:\n\t{}", cause)?;
-        current = cause.source();
-    }
-    Ok(())
 }
 
 #[tracing::instrument(

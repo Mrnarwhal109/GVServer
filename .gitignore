@@ -5,3 +5,5 @@
 bash_run_postgres.sh
 
 /notes/
+/output_container/
+/input_container/

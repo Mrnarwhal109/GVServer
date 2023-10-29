@@ -1,6 +1,4 @@
 use crate::configuration::{DatabaseSettings, Settings};
-use crate::routes::{health_check, handle_login, handle_signup, handle_add_pinpoint,
-                    handle_get_pinpoints, handle_delete_pinpoints};
 use actix_web::dev::Server;
 use actix_web::web::Data;
 use actix_web::{web, App, HttpServer};
@@ -12,9 +10,13 @@ use actix_web_lab::middleware::from_fn;
 use tracing_actix_web::TracingLogger;
 use crate::authentication::AuthService;
 use crate::authentication::middleware::get_jwt_permissions;
-use crate::routes::users::{handle_delete_user, handle_get_users};
-use crate::routes::users::post::handle_modify_user;
-// use crate::authentication::middleware::{implant_token};
+use crate::routes::health_check;
+use crate::routes::login::handle_login;
+use crate::routes::pinpoints::{handle_add_pinpoint, handle_get_pinpoints};
+use crate::routes::pinpoints::delete::delete_routing::handle_delete_pinpoints;
+use crate::routes::users::delete::delete_routing::handle_delete_user;
+use crate::routes::users::get::handle_get_users;
+use crate::routes::users::post::post_routing::{handle_modify_user, handle_signup};
 
 pub struct Application {
     port: u16,
@@ -76,6 +78,8 @@ async fn run(
     let auth_service = Data::new(auth_service);
     //let secret_key = Key::from(hmac_secret.expose_secret().as_bytes());
     //let redis_store = RedisSessionStore::new(redis_uri.expose_secret()).await?;
+    let json_config = web::JsonConfig::default()
+        .limit(20000000);
     let server = HttpServer::new(move || {
         App::new()
             .wrap(TracingLogger::default())
@@ -100,6 +104,7 @@ async fn run(
             )
             .app_data(db_pool.clone())
             .app_data(base_url.clone())
+            .app_data(json_config.clone())
             //.app_data(Data::new(HmacSecret(hmac_secret.clone())))
             .app_data(auth_service.clone())
     })

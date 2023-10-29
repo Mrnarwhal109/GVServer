@@ -2,7 +2,7 @@ use uuid::Uuid;
 use actix_web::{HttpResponse, web};
 use sqlx::{PgPool, Postgres, Transaction};
 use crate::authentication::{AuthParameters, AuthService};
-use crate::domain::pinpoint::DeletePinpointRequest;
+use crate::routes::pinpoints::delete::delete_pinpoint_request::DeletePinpointRequest;
 
 #[tracing::instrument(
 name = "handle_delete_pinpoint",

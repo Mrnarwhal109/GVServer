@@ -1,8 +1,9 @@
 use log::debug;
 use crate::helpers::{spawn_app};
 use gvserver::database_models::DbUser;
-use gvserver::routes::users::{GetUsersRequest, UserResponse};
-use gvserver::routes::users::post::{SignUpData, UserSignUp};
+use gvserver::domain::user_sign_up::UserSignUp;
+use gvserver::routes::users::get::{GetUsersRequest, UserResponse};
+use gvserver::routes::users::post::PostUserRequest;
 use crate::TestApp;
 
 #[tokio::test()]
@@ -10,7 +11,7 @@ async fn sign_up_persists_users() {
     let app = spawn_app().await;
     let username = String::from("SomeDudeHere");
     let pw = String::from("$uper$ecurePa$$word!");
-    let sign_up_data = SignUpData {
+    let sign_up_data = PostUserRequest {
         email: String::from("somedude@gmail.com"),
     };
 

@@ -128,7 +128,7 @@ fn verify_password_hash(
 
     match hash_found.expose_secret().to_string() == expected_password_hash {
         true => {
-            println!("Credentials matched!");
+            //println!("Credentials matched!");
             Ok(())
         },
         false => {

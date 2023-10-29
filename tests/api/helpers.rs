@@ -1,3 +1,6 @@
+use std::io::Cursor;
+use anyhow::anyhow;
+use image::{ColorType, DynamicImage, ImageFormat, ImageResult};
 use once_cell::sync::Lazy;
 use serde_json::json;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
@@ -5,13 +8,14 @@ use uuid::Uuid;
 use gvserver::authentication::{AuthParameters, AuthService};
 use gvserver::configuration::{get_configuration, DatabaseSettings};
 use gvserver::database_models::db_user::DbUser;
-use gvserver::domain::pinpoint::GetPinpointRequest;
-use gvserver::domain::PostPinpointRequest;
 use gvserver::routes::login::post::LoginData;
-use gvserver::routes::users::GetUsersRequest;
-use gvserver::routes::users::post::UserSignUp;
 use gvserver::startup::{get_connection_pool, Application};
 use gvserver::telemetry::{get_subscriber, init_subscriber};
+use image::io::Reader;
+use gvserver::domain::user_sign_up::UserSignUp;
+use gvserver::routes::pinpoints::get::GetPinpointRequest;
+use gvserver::routes::pinpoints::post::PostPinpointRequest;
+use gvserver::routes::users::get::GetUsersRequest;
 
 // Ensure that the `tracing` stack is only initialised once using `once_cell`
 static TRACING: Lazy<()> = Lazy::new(|| {
@@ -147,12 +151,70 @@ impl TestApp {
         jwt
     }
 
-    pub fn get_test_jpg_path() -> String {
-        String::from("/input_container/icantdoitsquidward.jpg")
+    pub fn get_test_input_dir_path(&self) -> String {
+        String::from("./input_container")
     }
 
-    pub async fn load_jpg_at(&self, path: &str) -> String {
-        String::from("NOT_IMPLEMENTED")
+    pub fn get_test_output_dir_path(&self) -> String {
+        String::from("./output_container")
+    }
+
+    pub async fn load_img_at(&self, path: &str) -> Option<DynamicImage> {
+        let img_opened = match image::io::Reader::open(path) {
+            Ok(x) => x,
+            Err(_) => {
+                println!("No image loaded A");
+                return None
+            }
+        };
+        let img = match img_opened.decode() {
+            Ok(x) => x,
+            Err(_) => {
+                println!("No image loaded B");
+                return None
+            }
+        };
+        Some(img)
+    }
+
+    pub async fn load_img_bytes_at(&self, path: &str) -> Option<Vec<u8>> {
+        let img = self.load_img_at(path).await;
+        if img.is_none() {
+            println!("No image loaded C");
+            return None;
+        }
+        let img_wr = img.unwrap();
+        let img_cln = img_wr.clone();
+        println!("Image colortype found: {:?}", img_cln.color());
+        Some(img_wr.into_bytes())
+        //img.map(|x| x.into_bytes())
+        // Equivalent
+        /*
+        match self.load_img_at(path).await {
+            None => None,
+            Some(x) => Some(x.into_bytes())
+        }
+         */
+    }
+
+    pub async fn save_img_at(&self, path: &str, img: DynamicImage) -> ImageResult<()> {
+        img.save(path)
+    }
+
+    pub async fn save_img_bytes_at(&self, path: &str, bytes: &Vec<u8>, img_quality: u8)
+        -> Result<bool, anyhow::Error> {
+        let b_count = bytes.len();
+        //let buffer = vec![0; 150];
+        println!("Bytes to save count: {:?}", b_count);
+        let attempt = image::save_buffer_with_format(
+            path, &bytes, 1280, 720, ColorType::Rgb8, ImageFormat::Jpeg);
+        match attempt {
+            Ok(_) => Ok(true),
+            Err(_) => {
+                println!("Save error C");
+                Err(anyhow!("Failed to save image bytes."))
+            }
+        }
     }
 }
 
