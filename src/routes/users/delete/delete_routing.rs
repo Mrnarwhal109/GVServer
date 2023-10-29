@@ -1,7 +1,7 @@
 use actix_web::{HttpResponse, web};
 use sqlx::{PgPool};
 use crate::authentication::{AuthParameters, AuthPermissions, AuthService};
-use crate::domain::app_user::DeleteUserRequest;
+use crate::routes::users::delete::delete_user_request::DeleteUserRequest;
 
 #[tracing::instrument(
 name = "handle_delete_user",

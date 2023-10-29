@@ -1,6 +1,6 @@
 use gvserver::authentication::AuthParameters;
+use gvserver::domain::user_sign_up::UserSignUp;
 use gvserver::routes::login::post::LoginData;
-use gvserver::routes::users::post::UserSignUp;
 use crate::{spawn_app};
 
 #[tokio::test()]

@@ -2,8 +2,9 @@ use argon2::password_hash::SaltString;
 use secrecy::Secret;
 use uuid::Uuid;
 use crate::authentication::{compute_password_hash, rand_salt_string};
+use crate::domain::errors::SignUpError;
 use crate::domain::user_email::UserEmail;
-use crate::routes::users::post::{UserSignUp, SignUpError};
+use crate::domain::user_sign_up::UserSignUp;
 
 pub struct AppUser {
     pub unique_id: Uuid,
@@ -11,17 +12,6 @@ pub struct AppUser {
     pub username: String,
     pub phash: Secret<String>,
     pub salt: SaltString,
-    pub role_id: i32,
-    pub role_title: String,
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-pub struct DbUser {
-    pub unique_id: Uuid,
-    pub email: String,
-    pub username: String,
-    pub phash: String,
-    pub salt: String,
     pub role_id: i32,
     pub role_title: String,
 }
@@ -45,7 +35,3 @@ impl TryFrom<UserSignUp> for AppUser {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-pub struct DeleteUserRequest {
-    pub username: String
-}

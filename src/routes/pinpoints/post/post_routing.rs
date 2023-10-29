@@ -1,8 +1,9 @@
+use std::string::FromUtf8Error;
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
 use sqlx::PgPool;
 use crate::domain::Pinpoint;
-use crate::domain::PostPinpointRequest;
 use crate::authentication::{AuthParameters, AuthPermissions, AuthService};
+use crate::routes::pinpoints::post::post_pinpoint_request::PostPinpointRequest;
 
 #[tracing::instrument(
 name = "handle_add_pinpoint",
@@ -27,6 +28,35 @@ pub async fn handle_add_pinpoint(
     println!("AuthPermissions found as {:?}", auth_permissions);
     if auth_permissions.username != new_pinpoint.username {
         return HttpResponse::Unauthorized().finish();
+    }
+
+    let attached = (&new_pinpoint).attachment.clone();
+    let attached_again = attached.clone();
+    match attached_again {
+        Some(x) => {
+            println!("BYTES OR SOMETHING ABOMINABLE {:?} ", x.len());
+        }
+        None => {
+            println!("No attachment in handler, A.");
+        }
+    }
+    match attached {
+        Some(x) => {
+            let clnd = String::from_utf8(x);
+            match clnd {
+                Ok(y) => {
+                    println!("RAW ATTACHMENT DATA: ");
+                    println!("{}", y);
+                }
+                Err(e) => {
+                    println!("FAILURE TO CLONE");
+                    println!("{}", e);
+                }
+            }
+        }
+        None => {
+            println!("No attachment in handler, B.");
+        }
     }
 
     match insert_pinpoint(&pool, &new_pinpoint).await {

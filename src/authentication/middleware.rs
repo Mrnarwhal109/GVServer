@@ -15,13 +15,11 @@ pub async fn get_jwt_permissions(
     match auth_service.validate_request(&auth_params) {
         Ok(x) => {
             req.extensions_mut().insert(x);
-            println!("MIDDLEWARE A");
             next.call(req).await
         },
         Err(_) => {
             let response = HttpResponse::Unauthorized().finish();
             let e = anyhow::anyhow!("Invalid authorization.");
-            println!("MIDDLEWARE B");
             Err(InternalError::from_response(e, response).into())
         }
     }
