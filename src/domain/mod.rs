@@ -4,8 +4,8 @@ pub mod user_email;
 mod errors;
 mod image_handling;
 
-pub mod database;
 pub mod user_sign_up;
+pub mod database;
 
 pub use pinpoint::Pinpoint;
 pub use pinpoint::TempUsername;

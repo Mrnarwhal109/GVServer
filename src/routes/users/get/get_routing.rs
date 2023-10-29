@@ -4,7 +4,7 @@ use anyhow::{anyhow};
 use sqlx::PgPool;
 use uuid::Uuid;
 use crate::authentication::AuthPermissions;
-use crate::database_models::DbUser;
+use crate::domain::database::DbUser;
 use crate::routes::users::get::get_user_request::GetUsersRequest;
 use crate::routes::users::get::user_response::UserResponse;
 
@@ -70,6 +70,8 @@ pub async fn get_user(
         },
         Err(_) => return HttpResponse::InternalServerError().finish()
     };
+    let determined_contents_id = user_val.contents_id.clone();
+    println!("Contents ID represented as {:?}", determined_contents_id);
     if extra_rights {
         // All the loot
         let user_resp = UserResponse {
@@ -77,7 +79,10 @@ pub async fn get_user(
             username: Some(user_val.username),
             role_id: Some(user_val.role_id),
             email: Some(user_val.email),
-            role_title: Some(user_val.role_title)
+            role_title: Some(user_val.role_title),
+            contents_id: user_val.contents_id,
+            contents_description: user_val.contents_description,
+            contents_attachment: user_val.contents_attachment
         };
         let json = serde_json::to_string(&user_resp).unwrap();
         return HttpResponse::Ok()
@@ -91,17 +96,20 @@ pub async fn get_user(
         UserFilter::ByUsername(_) => {
             UserResponse { unique_id: None, email: None,
                 username: Some(user_val.username), role_id: None, role_title: None,
+                contents_id: None, contents_description: None,  contents_attachment: None
             }
         }
         UserFilter::ByEmail(_) => {
             UserResponse {
                 unique_id: None, email: Some(user_val.email),
                 username: None, role_id: None, role_title: None,
+                contents_id: None, contents_description: None,  contents_attachment: None
             }
         }
         UserFilter::ByUuid(_) => {
             UserResponse { unique_id: None, email: None,
                 username: Some(user_val.username), role_id: None, role_title: None,
+                contents_id: None, contents_description: None,  contents_attachment: None
             }
         }
     };
@@ -119,15 +127,20 @@ pub async fn get_db_user_with_id(
     let user = sqlx::query_as!(
         DbUser,
        r#"SELECT usr.id AS unique_id,
-        usr.email as email,
-        usr.username as username,
-        usr.phash as phash,
-        usr.salt as salt,
-        rls.id as role_id,
-        rls.title as role_title
+        usr.email AS email,
+        usr.username AS username,
+        usr.phash AS phash,
+        usr.salt AS salt,
+        rls.id AS role_id,
+        rls.title AS role_title,
+        COALESCE(con.id) AS contents_id,
+        con.description AS contents_description,
+        con.attachment AS contents_attachment
         FROM users usr
         INNER JOIN user_roles usr_rls ON usr.id = usr_rls.user_id
         INNER JOIN roles rls ON rls.id = usr_rls.role_id
+        LEFT OUTER JOIN user_contents usr_con ON usr_con.user_id = usr.id
+        LEFT OUTER JOIN contents con ON con.id = usr_con.contents_id
         WHERE usr.id = $1; "#
         , u_id).fetch_optional(pool)
         .await
@@ -143,15 +156,20 @@ pub async fn get_db_user_with_username(
     let user = sqlx::query_as!(
         DbUser,
        r#"SELECT usr.id AS unique_id,
-        usr.email as email,
-        usr.username as username,
-        usr.phash as phash,
-        usr.salt as salt,
-        rls.id as role_id,
-        rls.title as role_title
+        usr.email AS email,
+        usr.username AS username,
+        usr.phash AS phash,
+        usr.salt AS salt,
+        rls.id AS role_id,
+        rls.title AS role_title,
+        COALESCE(con.id) AS contents_id,
+        con.description AS contents_description,
+        con.attachment AS contents_attachment
         FROM users usr
         INNER JOIN user_roles usr_rls ON usr.id = usr_rls.user_id
         INNER JOIN roles rls ON rls.id = usr_rls.role_id
+        LEFT OUTER JOIN user_contents usr_con ON usr_con.user_id = usr.id
+        LEFT OUTER JOIN contents con ON con.id = usr_con.contents_id
         WHERE usr.username = $1; "#
         , user_field).fetch_optional(pool)
         .await
@@ -167,15 +185,20 @@ pub async fn get_db_user_with_email(
     let user = sqlx::query_as!(
         DbUser,
        r#"SELECT usr.id AS unique_id,
-        usr.email as email,
-        usr.username as username,
-        usr.phash as phash,
-        usr.salt as salt,
-        rls.id as role_id,
-        rls.title as role_title
+        usr.email AS email,
+        usr.username AS username,
+        usr.phash AS phash,
+        usr.salt AS salt,
+        rls.id AS role_id,
+        rls.title AS role_title,
+        COALESCE(con.id) AS contents_id,
+        con.description AS contents_description,
+        con.attachment AS contents_attachment
         FROM users usr
         INNER JOIN user_roles usr_rls ON usr.id = usr_rls.user_id
         INNER JOIN roles rls ON rls.id = usr_rls.role_id
+        LEFT OUTER JOIN user_contents usr_con ON usr_con.user_id = usr.id
+        LEFT OUTER JOIN contents con ON con.id = usr_con.contents_id
         WHERE usr.email = $1; "#
         , user_field).fetch_optional(pool)
         .await

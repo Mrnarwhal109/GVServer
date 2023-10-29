@@ -3,7 +3,7 @@ use actix_web::http::header::ContentType;
 use anyhow::{anyhow};
 use sqlx::{PgPool};
 use crate::authentication::{AuthService, AuthParameters, AuthPermissions};
-use crate::database_models::DbPinpoint;
+use crate::domain::database::DbPinpoint;
 use crate::domain::{Pinpoint};
 use crate::routes::pinpoints::get::get_pinpoint_request::GetPinpointRequest;
 use crate::routes::pinpoints::get::get_pinpoint_response::GetPinpointResponse;

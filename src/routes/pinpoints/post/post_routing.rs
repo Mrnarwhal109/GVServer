@@ -12,53 +12,22 @@ skip(pool),
 pub async fn handle_add_pinpoint(
     req: HttpRequest,
     pinpoint: web::Json<PostPinpointRequest>,
-    // Retrieving a connection from the application state!
+    // Retrieving a connection from the application state
     pool: web::Data<PgPool>,
 ) -> HttpResponse {
-    // 'web::Json' is a wrapper around 'PinpointRequest'
-    // 'pinpoint.0' gives us access to the underlying 'PinpointRequest'
-    // You can use e.g. Pinpoint::try_from(pinpoint.0);
+    // 'web::Json' is a wrapper around 'PostPinpointRequest'
+    // 'pinpoint.0' gives us access to the underlying 'PostPinpointRequest'
+    // You can use e.g. PostPinpointRequest::try_from(pinpoint.0);
     let new_pinpoint: Pinpoint = match pinpoint.0.try_into() {
         Ok(pinpoint) => pinpoint,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
-
     let req_ext = req.extensions_mut();
     let auth_permissions: &AuthPermissions = req_ext.get::<AuthPermissions>().unwrap();
     println!("AuthPermissions found as {:?}", auth_permissions);
     if auth_permissions.username != new_pinpoint.username {
         return HttpResponse::Unauthorized().finish();
     }
-
-    let attached = (&new_pinpoint).attachment.clone();
-    let attached_again = attached.clone();
-    match attached_again {
-        Some(x) => {
-            println!("BYTES OR SOMETHING ABOMINABLE {:?} ", x.len());
-        }
-        None => {
-            println!("No attachment in handler, A.");
-        }
-    }
-    match attached {
-        Some(x) => {
-            let clnd = String::from_utf8(x);
-            match clnd {
-                Ok(y) => {
-                    println!("RAW ATTACHMENT DATA: ");
-                    println!("{}", y);
-                }
-                Err(e) => {
-                    println!("FAILURE TO CLONE");
-                    println!("{}", e);
-                }
-            }
-        }
-        None => {
-            println!("No attachment in handler, B.");
-        }
-    }
-
     match insert_pinpoint(&pool, &new_pinpoint).await {
         Ok(_) => HttpResponse::Ok().finish(),
         Err(_) => HttpResponse::InternalServerError().finish()
@@ -102,10 +71,7 @@ SELECT pin.id, con.id FROM pin, con
             tracing::error!("Failed to execute query: {:?}", e);
             e
             // Using the '?' operator to return early
-            // if the function failed, returning a sqlx::Error
-            // We will talk about error handling in depth later!
+            // if the function failed, returning a sqlx::Error.
         })?;
-
-
     Ok(())
 }

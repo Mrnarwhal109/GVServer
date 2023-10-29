@@ -1,31 +1,26 @@
-use actix_web::{HttpResponse, web};
+use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
 use sqlx::{PgPool};
-use crate::authentication::{AuthParameters, AuthPermissions, AuthService};
+use crate::authentication::{AuthPermissions, AuthService};
 use crate::routes::users::delete::delete_user_request::DeleteUserRequest;
 
 #[tracing::instrument(
 name = "handle_delete_user",
-skip(pool, auth, args, auth_params),
+skip(pool, args),
 )]
 pub async fn handle_delete_user(
+    req: HttpRequest,
     pool: web::Data<PgPool>,
-    auth: web::Data<AuthService>,
     args: web::Json<DeleteUserRequest>,
-    auth_params: AuthParameters,
 ) -> HttpResponse {
-    let permissions: AuthPermissions;
     let username = args.0.username;
     if username.is_empty() {
         return HttpResponse::BadRequest().finish();
     }
-    match auth.validate_request_for_user(
-        &auth_params, username.clone()) {
-        Ok(x) => permissions = x,
-        Err(_) => {
-            return HttpResponse::Unauthorized().finish();
-        }
-    };
-
+    let req_ext = req.extensions_mut();
+    let auth_permissions: &AuthPermissions = req_ext.get::<AuthPermissions>().unwrap();
+    if auth_permissions.username != username {
+        return HttpResponse::Unauthorized().finish();
+    }
     match delete_db_user(&pool, &username).await {
         Ok(_) => HttpResponse::Ok().finish(),
         Err(_) => HttpResponse::InternalServerError().finish()

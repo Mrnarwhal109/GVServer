@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 use chrono::{DateTime, Utc};
 use chrono::serde::ts_seconds;
 use uuid::Uuid;
-use crate::database_models::DbPinpoint;
+use crate::domain::database::DbPinpoint;
 
 pub struct Pinpoint {
     pub pinpoint_id: Uuid,

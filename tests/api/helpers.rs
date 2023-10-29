@@ -7,7 +7,7 @@ use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use gvserver::authentication::{AuthParameters, AuthService};
 use gvserver::configuration::{get_configuration, DatabaseSettings};
-use gvserver::database_models::db_user::DbUser;
+use gvserver::domain::database::db_user::DbUser;
 use gvserver::routes::login::post::LoginData;
 use gvserver::startup::{get_connection_pool, Application};
 use gvserver::telemetry::{get_subscriber, init_subscriber};
@@ -16,6 +16,7 @@ use gvserver::domain::user_sign_up::UserSignUp;
 use gvserver::routes::pinpoints::get::GetPinpointRequest;
 use gvserver::routes::pinpoints::post::PostPinpointRequest;
 use gvserver::routes::users::get::GetUsersRequest;
+use gvserver::routes::users::post::PostUserRequest;
 
 // Ensure that the `tracing` stack is only initialised once using `once_cell`
 static TRACING: Lazy<()> = Lazy::new(|| {
@@ -90,13 +91,15 @@ impl TestApp {
         response
     }
 
-    pub async fn post_signup(&self, json_data: String, username: String, pw: String) -> reqwest::Response
+    pub async fn post_signup(&self, body: PostUserRequest, username: String, pw: String)
+        -> reqwest::Response
     {
+        let json_body = json!(body).to_string();
         let response = self.api_client
             .post(&format!("{}/users", &self.address))
             .basic_auth(username, Some(pw))
             .header("Content-Type", "application/json")
-            .body(json_data)
+            .body(json_body)
             .send()
             .await
             .expect("Failed to execute request.");
@@ -106,26 +109,55 @@ impl TestApp {
     pub async fn select_one_user(&self, username: String) -> Result<DbUser, anyhow::Error> {
         let user_rows = sqlx::query_as!(
         DbUser,
-        "SELECT U.id AS unique_id, U.email AS email, U.username AS username, \
-        U.phash AS phash, U.salt AS salt, R.id AS role_id, R.title AS role_title \
-        FROM users U \
-        INNER JOIN user_roles UR on UR.user_id = U.id \
-        INNER JOIN roles R on UR.role_id = R.id \
-        WHERE U.username = $1; ", username).fetch_one(&self.db_pool).await?;
+       r#"SELECT usr.id AS unique_id,
+        usr.email AS email,
+        usr.username AS username,
+        usr.phash AS phash,
+        usr.salt AS salt,
+        rls.id AS role_id,
+        rls.title AS role_title,
+        COALESCE(con.id) AS contents_id,
+        con.description AS contents_description,
+        con.attachment AS contents_attachment
+        FROM users usr
+        INNER JOIN user_roles usr_rls ON usr.id = usr_rls.user_id
+        INNER JOIN roles rls ON rls.id = usr_rls.role_id
+        LEFT OUTER JOIN user_contents usr_con ON usr_con.user_id = usr.id
+        LEFT OUTER JOIN contents con ON con.id = usr_con.contents_id
+        WHERE usr.username = $1; "#, username).fetch_one(&self.db_pool).await?;
         Ok(user_rows)
     }
 
-    pub async fn sign_up_test_user(&self, username: &str, pw: &str, email: &str)
+    pub async fn sign_up_test_user(&self, username: String)
     -> String {
-        let sign_up_data = UserSignUp {
-            email: String::from(email),
-            username: String::from(username),
-            pw: String::from(pw)
+        let request_data = PostUserRequest {
+            email: String::from("testgenerated@nothing.com"),
+            contents_description: None,
+            contents_attachment: None,
         };
-        let json_data = serde_json::to_string(&sign_up_data)
-            .expect("Failed to serialize struct.");
+        let pw = String::from("Ins@n3T3$TP@$$W0RDDDDDDDD");
         let response = self.post_signup(
-            json_data, sign_up_data.username, sign_up_data.pw).await;
+            request_data, username, pw).await;
+        let code = response.status().as_u16();
+        let json_return = response.json::<AuthParameters>().await
+            .expect("Failed to get a JSON response back.");
+        let jwt = json_return.jwt.clone();
+        assert_eq!(code, 200);
+        jwt
+    }
+
+    pub async fn sign_up_test_user_full(&self, username: String,
+                                        content_description: Option<String>, 
+                                        content_attachment: Option<Vec<u8>>)
+                                   -> String {
+        let request_data = PostUserRequest {
+            email: String::from("testgenerated@nothing.com"),
+            contents_description: content_description,
+            contents_attachment: content_attachment,
+        };
+        let pw = String::from("Ins@n3T3$TP@$$W0RDDDDDDDD");
+        let response = self.post_signup(
+            request_data, username, pw).await;
         let code = response.status().as_u16();
         let json_return = response.json::<AuthParameters>().await
             .expect("Failed to get a JSON response back.");

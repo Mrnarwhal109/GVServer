@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(sqlx::FromRow)]
 pub struct DbUser {
     pub unique_id: Uuid,
     pub email: String,
@@ -9,4 +9,9 @@ pub struct DbUser {
     pub salt: String,
     pub role_id: i32,
     pub role_title: String,
+    pub contents_id: Option<Uuid>,
+    pub contents_description: Option<String>,
+    pub contents_attachment: Option<Vec<u8>>
 }
+
+impl DbUser {}

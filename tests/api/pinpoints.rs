@@ -45,10 +45,8 @@ async fn get_all_pinpoints_fails_with_invalid_jwts() {
 #[tokio::test]
 pub async fn get_all_pinpoints_allowed_with_new_user_jwt() {
     let app = spawn_app().await;
-    let username = "MentallyAbsurd";
-    let pw = "$uper$ecurePa$$word!";
-    let email = "mentallyabsurd@gmail.com";
-    let jwt = app.sign_up_test_user(username, pw, email).await;
+    let username = String::from("TestGeneratedUser");
+    let jwt = app.sign_up_test_user(username.clone()).await;
     let request_body = GetPinpointRequest {
         latitude: None,
         longitude: None,
@@ -56,20 +54,18 @@ pub async fn get_all_pinpoints_allowed_with_new_user_jwt() {
         pinpoint_id: None,
         username: None
     };
-    let response = app.get_pinpoints(jwt, username.to_string(), request_body).await;
+    let response = app.get_pinpoints(jwt, username.clone(), request_body).await;
     assert_eq!(response.status(), 200);
 }
 
 #[tokio::test]
 pub async fn post_pinpoint_allowed_with_new_user_jwt() {
     let app = spawn_app().await;
-    let username = "MentallyAbsurd224";
-    let pw = "$uper$ecurePa$$word!224";
-    let email = "mentallyabsurd224@gmail.com";
-    let jwt = app.sign_up_test_user(username, pw, email).await;
+    let username = String::from("TestGeneratedUser");
+    let jwt = app.sign_up_test_user(username.clone()).await;
     let request_body = PostPinpointRequest::new(
         5.0, 5.0, String::from(
-            "From unit testing"), None, username.to_string());
+            "From unit testing"), None, username.clone());
 
     let response = app.post_pinpoints(jwt, request_body).await;
     assert_eq!(response.status(), 200);
@@ -78,13 +74,11 @@ pub async fn post_pinpoint_allowed_with_new_user_jwt() {
 #[tokio::test]
 pub async fn post_pinpoint_fails_with_invalid_jwt() {
     let app = spawn_app().await;
-    let username = "MentallyAbsurd224";
-    let pw = "$uper$ecurePa$$word!224";
-    let email = "mentallyabsurd224@gmail.com";
-    let jwt = app.sign_up_test_user(username, pw, email).await;
+    let username = String::from("TestGeneratedUser");
+    let jwt = app.sign_up_test_user(username.clone()).await;
     let request_body = PostPinpointRequest::new(
         5.0, 5.0, String::from(
-            "From unit testing"), None, username.to_string());
+            "From unit testing"), None, username.clone());
     let response = app.post_pinpoints(String::from("BadJWTHereLOL"), request_body).await;
     assert_eq!(response.status(), 401);
 }
@@ -107,11 +101,8 @@ pub async fn handle_images_locally() {
 #[tokio::test]
 pub async fn post_pinpoint_with_attachment() {
     let app = spawn_app().await;
-    let username = "MentallyAbsurd224";
-    let pw = "$uper$ecurePa$$word!224";
-    let email = "mentallyabsurd224@gmail.com";
-    let jwt = app.sign_up_test_user(username, pw, email).await;
-
+    let username = String::from("TestGeneratedUser");
+    let jwt = app.sign_up_test_user(username.clone()).await;
     let input_path = format!("{}/icantdoitsquidward.jpg", app.get_test_input_dir_path());
     let attachment = app.load_img_bytes_at(&input_path).await;
     let img_bytes = attachment.expect("Failed to load image bytes.");
@@ -120,7 +111,7 @@ pub async fn post_pinpoint_with_attachment() {
 
     let request_body = PostPinpointRequest::new(
         5.0, 5.0, String::from(
-            "From unit testing"), Some(img_bytes), username.to_string());
+            "From unit testing"), Some(img_bytes), username.clone());
 
     let response = app.post_pinpoints(jwt, request_body).await;
     assert_eq!(response.status(), 200);
@@ -129,10 +120,8 @@ pub async fn post_pinpoint_with_attachment() {
 #[tokio::test]
 pub async fn post_pinpoint_with_attachment_full_validation() {
     let app = spawn_app().await;
-    let username = "MentallyAbsurd224";
-    let pw = "$uper$ecurePa$$word!224";
-    let email = "mentallyabsurd224@gmail.com";
-    let jwt = app.sign_up_test_user(username, pw, email).await;
+    let username = String::from("TestGeneratedUser");
+    let jwt = app.sign_up_test_user(username.clone()).await;
     let input_path = format!("{}/icantdoitsquidward.jpg", app.get_test_input_dir_path());
     let output_path = format!("{}/icanindeeddoitsquidward.jpg", app.get_test_output_dir_path());
     let attachment = app.load_img_bytes_at(&input_path).await;
@@ -141,7 +130,7 @@ pub async fn post_pinpoint_with_attachment_full_validation() {
     println!("Loaded image byte length: {:?}", expensive);
     let request_body = PostPinpointRequest::new(
         12.34, 12.34, String::from(
-            "From unit testing"), Some(img_bytes), username.to_string());
+            "From unit testing"), Some(img_bytes), username.clone());
     let response = app.post_pinpoints(jwt.clone(), request_body).await;
     assert_eq!(response.status(), 200);
     let get_req = GetPinpointRequest {
@@ -168,10 +157,8 @@ pub async fn post_pinpoint_with_attachment_full_validation() {
 #[tokio::test]
 pub async fn get_all_pinpoints_not_allowed_with_new_user_faulty_jwt() {
     let app = spawn_app().await;
-    let username = "MentallyAbsurd";
-    let pw = "$uper$ecurePa$$word!";
-    let email = "mentallyabsurd@gmail.com";
-    let jwt = app.sign_up_test_user(username, pw, email).await;
+    let username = String::from("TestGeneratedUser");
+    let jwt = app.sign_up_test_user(username.clone()).await;
     let mut evil_jwt = jwt.clone();
     evil_jwt.pop();
     evil_jwt.pop();
@@ -188,7 +175,7 @@ pub async fn get_all_pinpoints_not_allowed_with_new_user_faulty_jwt() {
         pinpoint_id: None,
         username: None
     };
-    let response = app.get_pinpoints(jwt, username.to_string(), request_body).await;
+    let response = app.get_pinpoints(jwt, username.clone(), request_body).await;
     assert_eq!(response.status(), 200);
 
     let request_body = GetPinpointRequest {
@@ -205,16 +192,14 @@ pub async fn get_all_pinpoints_not_allowed_with_new_user_faulty_jwt() {
 #[tokio::test]
 async fn post_get_pinpoint_allowed_with_generated_user() {
     let app = spawn_app().await;
-    let username = "MentallyAbsurd";
-    let pw = "$uper$ecurePa$$word";
-    let email = "mentallyabsurd@gmail.com";
-    let jwt = app.sign_up_test_user(username, pw, email).await;
+    let username = String::from("TestGeneratedUser");
+    let jwt = app.sign_up_test_user(username.clone()).await;
     let pinpoint_request_body = PostPinpointRequest::new(
         123.0,
         123.0,
         String::from("Description: This pinpoint was added from unit testing."),
         None,
-       String::from(username)
+       username.clone()
     );
     let response = app.post_pinpoints(jwt.clone(), pinpoint_request_body).await;
     let status = &response.status();
@@ -225,7 +210,7 @@ async fn post_get_pinpoint_allowed_with_generated_user() {
         longitude: None,
         proximity: None,
         pinpoint_id: None,
-        username: Some(String::from(username))
+        username: Some(username.clone())
     };
     let response = app.get_pinpoints(jwt.clone(), username.to_string(), request_body).await;
     assert_eq!(response.status(), 200);
