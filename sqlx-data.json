@@ -1,5 +1,94 @@
 {
   "db": "PostgreSQL",
+  "071f1cddfdbb6b162ed1428db478a39732e77f4dc6b0250ed70a167124418aa5": {
+    "describe": {
+      "columns": [
+        {
+          "name": "unique_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "email",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "username",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "phash",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "salt",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "role_id",
+          "ordinal": 5,
+          "type_info": "Int4"
+        },
+        {
+          "name": "role_title",
+          "ordinal": 6,
+          "type_info": "Text"
+        },
+        {
+          "name": "contents_id",
+          "ordinal": 7,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "contents_description",
+          "ordinal": 8,
+          "type_info": "Text"
+        },
+        {
+          "name": "contents_attachment",
+          "ordinal": 9,
+          "type_info": "Bytea"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        null,
+        true,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT usr.id AS unique_id,\n        usr.email AS email,\n        usr.username AS username,\n        usr.phash AS phash,\n        usr.salt AS salt,\n        rls.id AS role_id,\n        rls.title AS role_title,\n        COALESCE(con.id) AS contents_id,\n        con.description AS contents_description,\n        con.attachment AS contents_attachment\n        FROM users usr\n        INNER JOIN user_roles usr_rls ON usr.id = usr_rls.user_id\n        INNER JOIN roles rls ON rls.id = usr_rls.role_id\n        LEFT OUTER JOIN user_contents usr_con ON usr_con.user_id = usr.id\n        LEFT OUTER JOIN contents con ON con.id = usr_con.contents_id\n        WHERE usr.email = $1; "
+  },
+  "0e9d58d1d7bad2694cdd02aabc334cbb8cbb76e39b047c96d46c4a222bee33bc": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text",
+          "Bytea",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            WITH cts AS (\n                INSERT INTO contents (id, description, attachment)\n                VALUES ($1, $2, $3)\n                RETURNING id\n            )\n            INSERT INTO user_contents (user_id, contents_id)\n            (SELECT $4, id FROM cts);\n            "
+  },
   "1865b3d999479dae0bdefba6c319676454197521a30842d58fbd4ee98af167c6": {
     "describe": {
       "columns": [],
@@ -24,7 +113,7 @@
     },
     "query": "\n        WITH usr_pin(pinpoint_id) AS\n        (\n            SELECT pinpoint_id\n            FROM user_pinpoints\n            WHERE user_id IN (SELECT id FROM users WHERE username = $1)\n        )\n        DELETE FROM pinpoints\n        WHERE id IN (SELECT pinpoint_id FROM usr_pin);\n        "
   },
-  "7f0a36afb69b79f9f1a6c87f718356e85d2612670bda10c9e335d124eae73cea": {
+  "4b9903d5b5fb193155099b3c74f884cf880248e1e3ba4d42ef527f15449d3fc4": {
     "describe": {
       "columns": [],
       "nullable": [],
@@ -39,175 +128,7 @@
         ]
       }
     },
-    "query": "WITH usr AS\n            (INSERT INTO users (id, email, username, phash, salt)\n            VALUES ($1, $2, $3, $4, $5) RETURNING id)\n            INSERT INTO user_roles (user_id, role_id)\n            SELECT id, $6 FROM usr; "
-  },
-  "873d58f788c03f6f9c36311c485826b9ca819beea30ac928c49181a773f0dda1": {
-    "describe": {
-      "columns": [
-        {
-          "name": "unique_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "email",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "username",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "phash",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "salt",
-          "ordinal": 4,
-          "type_info": "Text"
-        },
-        {
-          "name": "role_id",
-          "ordinal": 5,
-          "type_info": "Int4"
-        },
-        {
-          "name": "role_title",
-          "ordinal": 6,
-          "type_info": "Text"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Text"
-        ]
-      }
-    },
-    "query": "SELECT usr.id AS unique_id,\n        usr.email as email,\n        usr.username as username,\n        usr.phash as phash,\n        usr.salt as salt,\n        rls.id as role_id,\n        rls.title as role_title\n        FROM users usr\n        INNER JOIN user_roles usr_rls ON usr.id = usr_rls.user_id\n        INNER JOIN roles rls ON rls.id = usr_rls.role_id\n        WHERE usr.username = $1; "
-  },
-  "8ce4fbb3ef57e64189b53fa6aa28534cfb1eb24ff794bee856bfe01d8c711abb": {
-    "describe": {
-      "columns": [
-        {
-          "name": "unique_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "email",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "username",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "phash",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "salt",
-          "ordinal": 4,
-          "type_info": "Text"
-        },
-        {
-          "name": "role_id",
-          "ordinal": 5,
-          "type_info": "Int4"
-        },
-        {
-          "name": "role_title",
-          "ordinal": 6,
-          "type_info": "Text"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Text"
-        ]
-      }
-    },
-    "query": "SELECT usr.id AS unique_id,\n        usr.email as email,\n        usr.username as username,\n        usr.phash as phash,\n        usr.salt as salt,\n        rls.id as role_id,\n        rls.title as role_title\n        FROM users usr\n        INNER JOIN user_roles usr_rls ON usr.id = usr_rls.user_id\n        INNER JOIN roles rls ON rls.id = usr_rls.role_id\n        WHERE usr.email = $1; "
-  },
-  "993ccdb64c305f0fea9e58a68b23aedaa6fe8a8fc3a44782d9b9bf6c5c6718f1": {
-    "describe": {
-      "columns": [
-        {
-          "name": "unique_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "email",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "username",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "phash",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "salt",
-          "ordinal": 4,
-          "type_info": "Text"
-        },
-        {
-          "name": "role_id",
-          "ordinal": 5,
-          "type_info": "Int4"
-        },
-        {
-          "name": "role_title",
-          "ordinal": 6,
-          "type_info": "Text"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Uuid"
-        ]
-      }
-    },
-    "query": "SELECT usr.id AS unique_id,\n        usr.email as email,\n        usr.username as username,\n        usr.phash as phash,\n        usr.salt as salt,\n        rls.id as role_id,\n        rls.title as role_title\n        FROM users usr\n        INNER JOIN user_roles usr_rls ON usr.id = usr_rls.user_id\n        INNER JOIN roles rls ON rls.id = usr_rls.role_id\n        WHERE usr.id = $1; "
+    "query": "\n            WITH usr AS (\n                INSERT INTO users (id, email, username, phash, salt)\n                VALUES ($1, $2, $3, $4, $5)\n                RETURNING id\n            )\n            INSERT INTO user_roles (user_id, role_id)\n            (SELECT id, $6 FROM usr);\n            "
   },
   "9c4fb702279719c6c43cfa7c3f54279ebed0c48123af43a6b47bdfef202ed58a": {
     "describe": {
@@ -311,6 +232,154 @@
       }
     },
     "query": "SELECT pin.id AS pinpoint_id, pin.latitude AS latitude, pin.longitude as longitude,\n        pin.added_at AS added_at,\n        con.id AS contents_id,\n        con.description AS description,\n        con.attachment AS attachment,\n        usr.id AS user_id,\n        usr.username AS username\n        FROM pinpoints pin\n        INNER JOIN pinpoint_contents pin_con on pin_con.pinpoint_id = pin.id\n        INNER JOIN contents con ON con.id = pin_con.content_id\n        INNER JOIN user_pinpoints usr_pin ON usr_pin.pinpoint_id = pin.id\n        INNER JOIN users usr ON usr_pin.user_id = usr.id\n        WHERE pin.latitude > $1 AND pin.latitude < $2\n        AND pin.longitude > $3 AND pin.longitude < $4 "
+  },
+  "a8d6db6d9da49266b5ae0c5d946a891270a747b4575fb3b9c8bd1390538b9b81": {
+    "describe": {
+      "columns": [
+        {
+          "name": "unique_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "email",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "username",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "phash",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "salt",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "role_id",
+          "ordinal": 5,
+          "type_info": "Int4"
+        },
+        {
+          "name": "role_title",
+          "ordinal": 6,
+          "type_info": "Text"
+        },
+        {
+          "name": "contents_id",
+          "ordinal": 7,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "contents_description",
+          "ordinal": 8,
+          "type_info": "Text"
+        },
+        {
+          "name": "contents_attachment",
+          "ordinal": 9,
+          "type_info": "Bytea"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        null,
+        true,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "SELECT usr.id AS unique_id,\n        usr.email AS email,\n        usr.username AS username,\n        usr.phash AS phash,\n        usr.salt AS salt,\n        rls.id AS role_id,\n        rls.title AS role_title,\n        COALESCE(con.id) AS contents_id,\n        con.description AS contents_description,\n        con.attachment AS contents_attachment\n        FROM users usr\n        INNER JOIN user_roles usr_rls ON usr.id = usr_rls.user_id\n        INNER JOIN roles rls ON rls.id = usr_rls.role_id\n        LEFT OUTER JOIN user_contents usr_con ON usr_con.user_id = usr.id\n        LEFT OUTER JOIN contents con ON con.id = usr_con.contents_id\n        WHERE usr.id = $1; "
+  },
+  "aa3e4fcfc9212ece5e63fbf07c7cc8bfc373aa30750cc20ae55af371eb1d01e1": {
+    "describe": {
+      "columns": [
+        {
+          "name": "unique_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "email",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "username",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "phash",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "salt",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "role_id",
+          "ordinal": 5,
+          "type_info": "Int4"
+        },
+        {
+          "name": "role_title",
+          "ordinal": 6,
+          "type_info": "Text"
+        },
+        {
+          "name": "contents_id",
+          "ordinal": 7,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "contents_description",
+          "ordinal": 8,
+          "type_info": "Text"
+        },
+        {
+          "name": "contents_attachment",
+          "ordinal": 9,
+          "type_info": "Bytea"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        null,
+        true,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT usr.id AS unique_id,\n        usr.email AS email,\n        usr.username AS username,\n        usr.phash AS phash,\n        usr.salt AS salt,\n        rls.id AS role_id,\n        rls.title AS role_title,\n        COALESCE(con.id) AS contents_id,\n        con.description AS contents_description,\n        con.attachment AS contents_attachment\n        FROM users usr\n        INNER JOIN user_roles usr_rls ON usr.id = usr_rls.user_id\n        INNER JOIN roles rls ON rls.id = usr_rls.role_id\n        LEFT OUTER JOIN user_contents usr_con ON usr_con.user_id = usr.id\n        LEFT OUTER JOIN contents con ON con.id = usr_con.contents_id\n        WHERE usr.username = $1; "
   },
   "b0798387d55f068fb21f06359b66e6595e820cda619b284dfbce50fdd422f880": {
     "describe": {
