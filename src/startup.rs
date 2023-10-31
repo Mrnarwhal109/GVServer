@@ -87,6 +87,7 @@ async fn run(
             .route("/", web::get().to(health_check))
             .route("/health_check", web::get().to(health_check))
             .route("/login", web::post().to(handle_login))
+            .route("/users", web::get().to(handle_get_users))
             .route("/users", web::post().to(handle_signup))
             .service(
                 web::scope("/pinpoints")
@@ -99,7 +100,6 @@ async fn run(
                 web::scope("/users")
                     .wrap(from_fn(get_jwt_permissions))
                     .route("", web::delete().to(handle_delete_user))
-                    .service(handle_get_users)
                     .service(handle_modify_user)
             )
             .app_data(db_pool.clone())

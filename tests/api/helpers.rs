@@ -45,12 +45,15 @@ impl TestApp {
         self.auth_service.create_jwt(username).await
     }
 
-    pub async fn get_users(&self, jwt: String, query: GetUsersRequest)
+    pub async fn get_users(&self, jwt: Option<String>, query: GetUsersRequest)
                                -> reqwest::Response {
-        self.api_client
+        let mut req_builder = self.api_client
             .get(&format!("{}/users", &self.address))
-            .header("Authorization", jwt)
-            .query(&query)
+            .query(&query);
+        if jwt.is_some() {
+            req_builder =  req_builder.header("Authorization", jwt.unwrap());
+        }
+        req_builder
             .send()
             .await
             .expect("Failed to execute request.")

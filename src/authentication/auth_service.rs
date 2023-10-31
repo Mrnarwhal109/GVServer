@@ -56,7 +56,7 @@ impl AuthService {
     }
 
     pub fn validate_request_for_user(
-        &self, auth_params: &AuthParameters, username: String
+        &self, auth_params: &AuthParameters, username: &str
     ) -> Result<AuthPermissions, String> {
         let initial_validation = self.validate_request(auth_params)?;
         if initial_validation.username == username {

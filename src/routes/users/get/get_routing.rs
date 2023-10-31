@@ -3,7 +3,7 @@ use actix_web::http::header::ContentType;
 use anyhow::{anyhow};
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::authentication::AuthPermissions;
+use crate::authentication::{AuthParameters, AuthPermissions, AuthService};
 use crate::domain::database::DbUser;
 use crate::routes::users::get::get_user_request::GetUsersRequest;
 use crate::routes::users::get::user_response::UserResponse;
@@ -18,39 +18,58 @@ enum UserFilter {
 
 #[tracing::instrument(
 name = "handle_get_users",
-skip(pool, args),
+skip(pool, args, auth, auth_params),
 )]
-#[get("")]
 pub async fn handle_get_users(
-    req: HttpRequest,
     pool: web::Data<PgPool>,
     args: web::Query<GetUsersRequest>,
+    auth: web::Data<AuthService>,
+    auth_params: Option<AuthParameters>
 ) -> HttpResponse {
-    let req_ext = req.extensions_mut();
-    let auth_permissions: &AuthPermissions = req_ext.get::<AuthPermissions>().unwrap();
-    get_user(pool, &args, &auth_permissions).await
+    let username_perhaps = args.username.clone();
+    // A is equivalent to B. Fun Rust shorthands.
+    /*
+    let permissions: Option<AuthPermissions>;
+    if username_perhaps.is_some() {
+        let username = username_perhaps.unwrap();
+        permissions = auth_params.and_then(|x: AuthParameters| -> Option<AuthPermissions> {
+            match auth.validate_request_for_user(&x, username.clone()) {
+                Ok(x) => Some(x),
+                Err(_) => None
+            }
+        })
+    }
+    else {
+        permissions = None;
+    }
+     */
+
+    // B
+    let permissions = username_perhaps.and_then(|u| {
+        auth_params.and_then(|x| {
+            auth.validate_request_for_user(&x, &u).ok()
+        })
+    });
+
+    get_user(pool, &args, permissions).await
 }
 
 pub async fn get_user(
     pool: web::Data<PgPool>,
     args: &GetUsersRequest,
-    auth: &AuthPermissions
+    auth: Option<AuthPermissions>
 ) -> HttpResponse {
-    if args.email.is_none() && args.username.is_none() && args.user_id.is_none() {
+    if args.email.is_none() == args.username.is_none() {
         return HttpResponse::BadRequest().finish()
     }
     let mut filter_by = UserFilter::None;
     let mut extra_rights = false;
     if args.username.is_some() {
         filter_by = UserFilter::ByUsername(args.username.clone().unwrap());
-        if auth.username == args.username.clone().unwrap() {
-            extra_rights = true;
-        }
-    }
-    else if args.user_id.is_some() {
-        filter_by = UserFilter::ByUuid(args.user_id.clone().unwrap());
-        if auth.username == args.username.clone().unwrap() {
-            extra_rights = true;
+        if auth.is_some() {
+            if auth.unwrap().username == args.username.clone().unwrap() {
+                extra_rights = true;
+            }
         }
     }
     else if args.email.is_some() {

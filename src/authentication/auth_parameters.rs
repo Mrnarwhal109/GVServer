@@ -13,7 +13,7 @@ impl AuthParameters {
         match _auth {
             Some(_) => {
                 let test = _auth.unwrap().to_str().unwrap();
-                //println!("Auth unwrapped: {}", test);
+                println!("Auth unwrapped: {}", test);
                 let _split: Vec<&str> = _auth.unwrap().to_str().unwrap().split("Bearer").collect();
                 let token = _split[0].trim();
                 AuthParameters { jwt: token.to_string() }

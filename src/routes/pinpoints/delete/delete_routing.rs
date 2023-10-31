@@ -21,7 +21,7 @@ pub async fn handle_delete_pinpoints(
     }
 
     match auth.validate_request_for_user(
-        &auth_params, username.clone()) {
+        &auth_params, &username) {
         Ok(x) => x,
         Err(_) => {
             return HttpResponse::Unauthorized().finish();

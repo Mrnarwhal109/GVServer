@@ -5,3 +5,4 @@ pub mod users;
 
 // Export of handlers
 pub use health_check::*;
+pub use pinpoints::*;

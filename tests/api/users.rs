@@ -62,7 +62,25 @@ pub async fn get_users_username_only() {
         username: Some(username.to_string()),
         user_id: None,
     };
-    let response = app.get_users(jwt, request_body).await;
+    let response = app.get_users(Some(jwt), request_body).await;
+    let code = (&response.status()).clone();
+    let json = response.json::<UserResponse>().await.unwrap();
+    println!("Response json {:?}", json);
+    assert!(json.username.is_some());
+    assert_eq!(code, 200);
+}
+
+#[tokio::test]
+pub async fn get_users_username_only_no_auth() {
+    let app = spawn_app().await;
+    let username = "MentallyAbsurd";
+    app.sign_up_test_user(username.to_string()).await;
+    let request_body = GetUsersRequest {
+        email: None,
+        username: Some(username.to_string()),
+        user_id: None,
+    };
+    let response = app.get_users(None, request_body).await;
     let code = (&response.status()).clone();
     let json = response.json::<UserResponse>().await.unwrap();
     println!("Response json {:?}", json);
@@ -80,7 +98,7 @@ pub async fn get_users_nonexistent_but_ok() {
         username: Some(String::from("IProbablyDoNotExist")),
         user_id: None,
     };
-    let response = app.get_users(jwt, request_body).await;
+    let response = app.get_users(Some(jwt), request_body).await;
     let code = (&response.status()).clone();
     assert_eq!(response.content_length().unwrap(), 0);
     assert_eq!(code, 200);
@@ -109,7 +127,7 @@ pub async fn user_attachment_full_validation() {
         user_id: None,
     };
     let get_back = app.get_users(
-        jwt, user_request).await;
+        Some(jwt), user_request).await;
     assert_eq!(get_back.status(), 200);
     let mut json_return = get_back.json::<UserResponse>().await
         .expect("Failed to get a JSON response back.");
