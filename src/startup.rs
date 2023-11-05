@@ -16,7 +16,8 @@ use crate::routes::pinpoints::{handle_add_pinpoint, handle_get_pinpoints};
 use crate::routes::pinpoints::delete::delete_routing::handle_delete_pinpoints;
 use crate::routes::users::delete::delete_routing::handle_delete_user;
 use crate::routes::users::get::handle_get_users;
-use crate::routes::users::post::post_routing::{handle_modify_user, handle_signup};
+use crate::routes::users::post::post_routing::{handle_signup};
+use crate::routes::users::put::handle_put_user;
 
 pub struct Application {
     port: u16,
@@ -100,7 +101,7 @@ async fn run(
                 web::scope("/users")
                     .wrap(from_fn(get_jwt_permissions))
                     .route("", web::delete().to(handle_delete_user))
-                    .service(handle_modify_user)
+                    .service(handle_put_user)
             )
             .app_data(db_pool.clone())
             .app_data(base_url.clone())

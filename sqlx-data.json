@@ -113,6 +113,26 @@
     },
     "query": "\n        WITH usr_pin(pinpoint_id) AS\n        (\n            SELECT pinpoint_id\n            FROM user_pinpoints\n            WHERE user_id IN (SELECT id FROM users WHERE username = $1)\n        )\n        DELETE FROM pinpoints\n        WHERE id IN (SELECT pinpoint_id FROM usr_pin);\n        "
   },
+  "47c9d6119023e055e919bfd1ddeaade45e14f227c602d5b835090b41bf1526d2": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            SELECT usr.id\n            FROM users usr\n            WHERE usr.username = $1;\n            "
+  },
   "4b9903d5b5fb193155099b3c74f884cf880248e1e3ba4d42ef527f15449d3fc4": {
     "describe": {
       "columns": [],
@@ -392,6 +412,64 @@
       }
     },
     "query": "\n        DELETE FROM users\n        WHERE username = $1;\n        "
+  },
+  "bf5a67f7b626518d4a5d32a7809e26b33becf57916d9d4572411bd546ad4f873": {
+    "describe": {
+      "columns": [
+        {
+          "name": "contents_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            WITH usr_id(id) AS (\n                SELECT DISTINCT id FROM users WHERE username = $1\n            ),\n            usr AS (\n                UPDATE users\n                SET username = $2, email = $3, phash = $4, salt = $5\n                WHERE id IN (SELECT id FROM usr_id)\n            )\n            SELECT contents_id FROM user_contents uc\n            WHERE uc.user_id in (SELECT id FROM usr_id);\n            "
+  },
+  "c3d76d5cd58527bfdccc387ea189927df642a78e2c60164040dc45d95bd5acec": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Bytea",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n                UPDATE contents SET description = $1, attachment = $2\n                WHERE id = $3;\n            "
+  },
+  "cf709dd9ea9afab606520d2bccc9d43b7e776677027b03940e9963b01c6b8bee": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            SELECT usr.id\n            FROM users usr\n            WHERE usr.email = $1;\n            "
   },
   "dc8b5bc0a06b10823bf0a46e6784b1dd4fbfad72627cb3405138e22d957bfa80": {
     "describe": {

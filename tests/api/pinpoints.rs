@@ -46,7 +46,8 @@ async fn get_all_pinpoints_fails_with_invalid_jwts() {
 pub async fn get_all_pinpoints_allowed_with_new_user_jwt() {
     let app = spawn_app().await;
     let username = String::from("TestGeneratedUser");
-    let jwt = app.sign_up_test_user(username.clone()).await;
+    let jwt = app.sign_up_test_user(username.as_str(),
+                                    "initialtestingemail@something.com", None).await;
     let request_body = GetPinpointRequest {
         latitude: None,
         longitude: None,
@@ -62,7 +63,8 @@ pub async fn get_all_pinpoints_allowed_with_new_user_jwt() {
 pub async fn post_pinpoint_allowed_with_new_user_jwt() {
     let app = spawn_app().await;
     let username = String::from("TestGeneratedUser");
-    let jwt = app.sign_up_test_user(username.clone()).await;
+    let jwt = app.sign_up_test_user(username.as_str(),
+                                    "initialtestingemail@something.com", None).await;
     let request_body = PostPinpointRequest::new(
         5.0, 5.0, String::from(
             "From unit testing"), None, username.clone());
@@ -75,7 +77,8 @@ pub async fn post_pinpoint_allowed_with_new_user_jwt() {
 pub async fn post_pinpoint_fails_with_invalid_jwt() {
     let app = spawn_app().await;
     let username = String::from("TestGeneratedUser");
-    let jwt = app.sign_up_test_user(username.clone()).await;
+    let jwt = app.sign_up_test_user(username.as_str(),
+                                    "initialtestingemail@something.com", None).await;
     let request_body = PostPinpointRequest::new(
         5.0, 5.0, String::from(
             "From unit testing"), None, username.clone());
@@ -102,7 +105,8 @@ pub async fn handle_images_locally() {
 pub async fn post_pinpoint_with_attachment() {
     let app = spawn_app().await;
     let username = String::from("TestGeneratedUser");
-    let jwt = app.sign_up_test_user(username.clone()).await;
+    let jwt = app.sign_up_test_user(username.as_str(),
+                                    "initialtestingemail@something.com", None).await;
     let input_path = format!("{}/icantdoitsquidward.jpg", app.get_test_input_dir_path());
     let attachment = app.load_img_bytes_at(&input_path).await;
     let img_bytes = attachment.expect("Failed to load image bytes.");
@@ -121,7 +125,8 @@ pub async fn post_pinpoint_with_attachment() {
 pub async fn post_pinpoint_with_attachment_full_validation() {
     let app = spawn_app().await;
     let username = String::from("TestGeneratedUser");
-    let jwt = app.sign_up_test_user(username.clone()).await;
+    let jwt = app.sign_up_test_user(username.as_str(),
+                                    "initialtestingemail@something.com", None).await;
     let input_path = format!("{}/icantdoitsquidward.jpg", app.get_test_input_dir_path());
     let output_path = format!("{}/icanindeeddoitsquidward.jpg", app.get_test_output_dir_path());
     let attachment = app.load_img_bytes_at(&input_path).await;
@@ -158,7 +163,8 @@ pub async fn post_pinpoint_with_attachment_full_validation() {
 pub async fn get_all_pinpoints_not_allowed_with_new_user_faulty_jwt() {
     let app = spawn_app().await;
     let username = String::from("TestGeneratedUser");
-    let jwt = app.sign_up_test_user(username.clone()).await;
+    let jwt = app.sign_up_test_user(username.as_str(),
+                                    "initialtestingemail@something.com", None).await;
     let mut evil_jwt = jwt.clone();
     evil_jwt.pop();
     evil_jwt.pop();
@@ -193,7 +199,8 @@ pub async fn get_all_pinpoints_not_allowed_with_new_user_faulty_jwt() {
 async fn post_get_pinpoint_allowed_with_generated_user() {
     let app = spawn_app().await;
     let username = String::from("TestGeneratedUser");
-    let jwt = app.sign_up_test_user(username.clone()).await;
+    let jwt = app.sign_up_test_user(username.as_str(),
+                                    "initialtestingemail@something.com", None).await;
     let pinpoint_request_body = PostPinpointRequest::new(
         123.0,
         123.0,

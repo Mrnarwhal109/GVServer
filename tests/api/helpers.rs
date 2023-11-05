@@ -15,8 +15,9 @@ use image::io::Reader;
 use gvserver::domain::user_sign_up::UserSignUp;
 use gvserver::routes::pinpoints::get::GetPinpointRequest;
 use gvserver::routes::pinpoints::post::PostPinpointRequest;
-use gvserver::routes::users::get::GetUsersRequest;
+use gvserver::routes::users::get::{GetUsersRequest, UserResponse};
 use gvserver::routes::users::post::PostUserRequest;
+use gvserver::routes::users::put::put_user_request::PutUserRequest;
 
 // Ensure that the `tracing` stack is only initialised once using `once_cell`
 static TRACING: Lazy<()> = Lazy::new(|| {
@@ -51,12 +52,53 @@ impl TestApp {
             .get(&format!("{}/users", &self.address))
             .query(&query);
         if jwt.is_some() {
-            req_builder =  req_builder.header("Authorization", jwt.unwrap());
+            req_builder = req_builder.header("Authorization", jwt.unwrap());
         }
         req_builder
             .send()
             .await
             .expect("Failed to execute request.")
+    }
+
+    pub async fn post_users(&self, body: PostUserRequest, username: String, pw: String)
+                            -> reqwest::Response
+    {
+        let json_body = json!(body).to_string();
+        let response = self.api_client
+            .post(&format!("{}/users", &self.address))
+            .basic_auth(username, Some(pw))
+            .header("Content-Type", "application/json")
+            .body(json_body)
+            .send()
+            .await
+            .expect("Failed to execute request.");
+        response
+    }
+
+    pub async fn put_users(&self, jwt: String, user_id_path: Uuid, body: PutUserRequest)
+                            -> reqwest::Response
+    {
+        let json_body = json!(body).to_string();
+        //let path = user_id_path.to_string();
+        self.api_client
+            .put(&format!("{}/users/{}", &self.address, user_id_path))
+            .header("Content-Type", "application/json")
+            .header("Authorization", jwt)
+            .body(json_body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
+    pub async fn post_login(&self, username: String, pw: String) -> reqwest::Response
+    {
+        let response = self.api_client
+            .post(&format!("{}/login", &self.address))
+            .basic_auth(username, Some(pw))
+            .send()
+            .await
+            .expect("Failed to execute request.");
+        response
     }
 
     pub async fn get_pinpoints(&self, jwt: String, username: String, query: GetPinpointRequest)
@@ -83,30 +125,110 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
-    pub async fn post_login(&self, username: String, pw: String) -> reqwest::Response
-    {
-        let response = self.api_client
-            .post(&format!("{}/login", &self.address))
-            .basic_auth(username, Some(pw))
-            .send()
-            .await
-            .expect("Failed to execute request.");
-        response
+    pub async fn sign_up_test_user(&self, username: &str, email: &str, pw: Option<&str>)
+    -> String {
+        let request_data = PostUserRequest {
+            email: email.to_string(),
+            contents_description: None,
+            contents_attachment: None,
+        };
+        let passwd = pw.unwrap_or("Ins@n3T3$TP@$$W0RDDDDDDDD");
+        let response = self.post_users(
+            request_data, username.to_string(), passwd.to_string()).await;
+        let code = response.status().as_u16();
+        let json_return = response.json::<AuthParameters>().await
+            .expect("Failed to get a JSON response back.");
+        let jwt = json_return.jwt.clone();
+        assert_eq!(code, 200);
+        jwt
     }
 
-    pub async fn post_signup(&self, body: PostUserRequest, username: String, pw: String)
-        -> reqwest::Response
-    {
-        let json_body = json!(body).to_string();
-        let response = self.api_client
-            .post(&format!("{}/users", &self.address))
-            .basic_auth(username, Some(pw))
-            .header("Content-Type", "application/json")
-            .body(json_body)
-            .send()
-            .await
-            .expect("Failed to execute request.");
-        response
+    pub async fn sign_up_test_user_full(&self, username: &str, email: &str,
+                                        pw: Option<&str>,
+                                        content_description: Option<String>, 
+                                        content_attachment: Option<Vec<u8>>)
+                                   -> String {
+        let request_data = PostUserRequest {
+            email: email.to_string(),
+            contents_description: content_description,
+            contents_attachment: content_attachment,
+        };
+        let passwd = pw.unwrap_or("Ins@n3T3$TP@$$W0RDDDDDDDD");
+        let response = self.post_users(
+            request_data, username.to_string(), passwd.to_string()).await;
+        let code = response.status().as_u16();
+        let json_return = response.json::<AuthParameters>().await
+            .expect("Failed to get a JSON response back.");
+        let jwt = json_return.jwt.clone();
+        assert_eq!(code, 200);
+        jwt
+    }
+
+    pub async fn sign_up_get_full_user(&self, username: &str, email: &str, pw: Option<&str>,
+                                       content_desc: Option<String>, content_attachment: Option<Vec<u8>>)
+    -> (String, UserResponse) {
+        let jwt = self.sign_up_test_user_full(
+            username, email, pw, content_desc, content_attachment).await;
+        let request_body = GetUsersRequest {
+            email: None,
+            username: Some(String::from(username)),
+            user_id: None,
+        };
+        let response = self.get_users(Some(jwt.clone()), request_body).await;
+        let response_object = response.json::<UserResponse>().await.unwrap();
+        assert!(response_object.unique_id.as_ref().is_some());
+        (jwt, response_object)
+    }
+
+    pub async fn put_user_get_user(
+        &self, jwt: String, user_id: Uuid, initial_username: String, next_username: Option<String>, email: Option<String>,
+        password: Option<String>,
+        contents_description: Option<String>,
+        contents_attachment: Option<Vec<u8>>) -> (String, UserResponse) {
+        let put_req_email = PutUserRequest {
+            username: next_username.clone(),
+            email,
+            password,
+            contents_description,
+            contents_attachment
+        };
+        let put_resp = self.put_users(jwt.clone(), user_id,put_req_email).await;
+        // A new JWT was given if we changed the username during the PUT
+        let next_jwt = match next_username {
+            Some(_) => {
+                let json_return = put_resp.json::<AuthParameters>().await
+                    .expect("Failed to get a JSON response back.");
+                json_return.jwt.clone()
+            },
+            None => jwt.clone()
+        };
+        let get_request_username = next_username.unwrap_or(initial_username.clone());
+        let get_request_body = GetUsersRequest {
+            email: None,
+            username: Some(get_request_username),
+            user_id: None,
+        };
+        let get_response = self.get_users(Some(next_jwt.clone()), get_request_body).await;
+        let response_object = get_response.json::<UserResponse>().await.unwrap();
+        assert!(response_object.unique_id.as_ref().is_some());
+        (next_jwt, response_object)
+    }
+
+    pub async fn login_test(&self, username: &str, pw: &str) -> String {
+        let login_data = LoginData {
+            username: String::from(username),
+            pw: String::from(pw)
+        };
+        serde_json::to_string(&login_data)
+            .expect("Failed to serialize struct.");
+        let response = self.post_login(
+            login_data.username, login_data.pw).await;
+        let code = response.status().as_u16();
+        let json_return = response.json::<AuthParameters>().await
+            .expect("Failed to get a JSON response back.");
+        let jwt = json_return.jwt.clone();
+        assert_eq!(code, 200);
+        jwt
     }
 
     pub async fn select_one_user(&self, username: String) -> Result<DbUser, anyhow::Error> {
@@ -129,61 +251,6 @@ impl TestApp {
         LEFT OUTER JOIN contents con ON con.id = usr_con.contents_id
         WHERE usr.username = $1; "#, username).fetch_one(&self.db_pool).await?;
         Ok(user_rows)
-    }
-
-    pub async fn sign_up_test_user(&self, username: String)
-    -> String {
-        let request_data = PostUserRequest {
-            email: String::from("testgenerated@nothing.com"),
-            contents_description: None,
-            contents_attachment: None,
-        };
-        let pw = String::from("Ins@n3T3$TP@$$W0RDDDDDDDD");
-        let response = self.post_signup(
-            request_data, username, pw).await;
-        let code = response.status().as_u16();
-        let json_return = response.json::<AuthParameters>().await
-            .expect("Failed to get a JSON response back.");
-        let jwt = json_return.jwt.clone();
-        assert_eq!(code, 200);
-        jwt
-    }
-
-    pub async fn sign_up_test_user_full(&self, username: String,
-                                        content_description: Option<String>, 
-                                        content_attachment: Option<Vec<u8>>)
-                                   -> String {
-        let request_data = PostUserRequest {
-            email: String::from("testgenerated@nothing.com"),
-            contents_description: content_description,
-            contents_attachment: content_attachment,
-        };
-        let pw = String::from("Ins@n3T3$TP@$$W0RDDDDDDDD");
-        let response = self.post_signup(
-            request_data, username, pw).await;
-        let code = response.status().as_u16();
-        let json_return = response.json::<AuthParameters>().await
-            .expect("Failed to get a JSON response back.");
-        let jwt = json_return.jwt.clone();
-        assert_eq!(code, 200);
-        jwt
-    }
-
-    pub async fn login_test(&self, username: &str, pw: &str) -> String {
-        let login_data = LoginData {
-            username: String::from(username),
-            pw: String::from(pw)
-        };
-        serde_json::to_string(&login_data)
-            .expect("Failed to serialize struct.");
-        let response = self.post_login(
-            login_data.username, login_data.pw).await;
-        let code = response.status().as_u16();
-        let json_return = response.json::<AuthParameters>().await
-            .expect("Failed to get a JSON response back.");
-        let jwt = json_return.jwt.clone();
-        assert_eq!(code, 200);
-        jwt
     }
 
     pub fn get_test_input_dir_path(&self) -> String {

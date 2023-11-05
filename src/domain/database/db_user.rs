@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-#[derive(sqlx::FromRow)]
+#[derive(sqlx::FromRow, Debug, Clone)]
 pub struct DbUser {
     pub unique_id: Uuid,
     pub email: String,

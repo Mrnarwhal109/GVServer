@@ -26,6 +26,7 @@ pub async fn handle_get_users(
     auth: web::Data<AuthService>,
     auth_params: Option<AuthParameters>
 ) -> HttpResponse {
+    println!("Get users handler args: {:?}", args.0.clone());
     let username_perhaps = args.username.clone();
     // A is equivalent to B. Fun Rust shorthands.
     /*
@@ -45,7 +46,7 @@ pub async fn handle_get_users(
      */
 
     // B
-    let permissions = username_perhaps.and_then(|u| {
+    let mut permissions = username_perhaps.and_then(|u| {
         auth_params.and_then(|x| {
             auth.validate_request_for_user(&x, &u).ok()
         })
@@ -79,8 +80,8 @@ pub async fn get_user(
     let attempt = match filter_by.clone() {
         UserFilter::None => Err(anyhow!("Uh what?")),
         UserFilter::ByUuid(x) => get_db_user_with_id(&pool, Uuid::from(x.clone())).await,
-        UserFilter::ByEmail(x) => get_db_user_with_email(&pool, x.clone()).await,
-        UserFilter::ByUsername(x) => get_db_user_with_username(&pool, x.clone()).await,
+        UserFilter::ByEmail(x) => get_db_user_with_email(&pool, &x).await,
+        UserFilter::ByUsername(x) => get_db_user_with_username(&pool, &x).await,
     };
     let user_val = match attempt {
         Ok(x) => match x {
@@ -170,7 +171,7 @@ pub async fn get_db_user_with_id(
 // Hard-coded to the moon to avoid SQL injection
 pub async fn get_db_user_with_username(
     pool: &PgPool,
-    user_field: String,
+    user_field: &str,
 ) -> Result<Option<DbUser>, anyhow::Error> {
     let user = sqlx::query_as!(
         DbUser,
@@ -199,7 +200,7 @@ pub async fn get_db_user_with_username(
 // Hard-coded to the moon to avoid SQL injection
 pub async fn get_db_user_with_email(
     pool: &PgPool,
-    user_field: String,
+    email: &str,
 ) -> Result<Option<DbUser>, anyhow::Error> {
     let user = sqlx::query_as!(
         DbUser,
@@ -219,7 +220,7 @@ pub async fn get_db_user_with_email(
         LEFT OUTER JOIN user_contents usr_con ON usr_con.user_id = usr.id
         LEFT OUTER JOIN contents con ON con.id = usr_con.contents_id
         WHERE usr.email = $1; "#
-        , user_field).fetch_optional(pool)
+        , email).fetch_optional(pool)
         .await
         .expect("Failed to perform a query to retrieve the user.");
     Ok(user)

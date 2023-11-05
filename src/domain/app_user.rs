@@ -32,7 +32,7 @@ impl TryFrom<UserSignUp> for AppUser {
         let mut contents_id = None;
         let contents_description = value.contents_description;
         let contents_attachment = value.contents_attachment;
-        if contents_attachment.is_some() {
+        if contents_description.is_some() || contents_attachment.is_some() {
             contents_id = Some(Uuid::new_v4());
         }
         let phash = compute_password_hash(&pw, &salt)

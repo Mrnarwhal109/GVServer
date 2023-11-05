@@ -160,17 +160,3 @@ async fn store_new_user_contents(
         .await?;
     Ok(user.unique_id)
 }
-
-#[tracing::instrument(
-name = "handle_modify_user",
-skip(pool, auth, auth_params),
-)]
-#[post("/{username}")]
-pub async fn handle_modify_user(
-    pool: web::Data<PgPool>,
-    auth: web::Data<AuthService>,
-    path: web::Path<String>,
-    auth_params: AuthParameters,
-) -> HttpResponse {
-   HttpResponse::Ok().finish()
-}

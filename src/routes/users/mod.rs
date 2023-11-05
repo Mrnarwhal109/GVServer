@@ -1,6 +1,7 @@
 pub mod get;
 pub mod post;
 pub mod delete;
+pub mod put;
 
 /*
 pub use get::handle_get_users;

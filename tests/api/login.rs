@@ -14,7 +14,7 @@ pub async fn login_allows_genuine_user() {
         contents_description: None,
         contents_attachment: None
     };
-    let response = app.post_signup(sign_up_data, username.clone(), pw).await;
+    let response = app.post_users(sign_up_data, username.clone(), pw).await;
     assert_eq!(response.status(), 200);
     let login_data = LoginData {
         username: username.clone(),
@@ -42,7 +42,7 @@ pub async fn login_doesnt_allow_bad_pw() {
         contents_description: None,
         contents_attachment: None
     };
-    let response = app.post_signup(sign_up_data, username.clone(), pw).await;
+    let response = app.post_users(sign_up_data, username.clone(), pw).await;
     assert_eq!(response.status(), 200);
     let login_data = LoginData {
         username: username.clone(),
